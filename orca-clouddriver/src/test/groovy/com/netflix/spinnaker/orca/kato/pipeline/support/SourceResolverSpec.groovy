@@ -125,7 +125,7 @@ class SourceResolverSpec extends Specification {
     def source = resolver.getSource(stage)
 
     then:
-    1 * oort.getTargetServerGroupTyped(
+    1 * oort.getTargetServerGroup(
       'app',
       'test',
       'app-test',
@@ -174,7 +174,7 @@ class SourceResolverSpec extends Specification {
     def source = resolver.getSource(stage)
 
     then:
-    1 * oort.getTargetServerGroupTyped(
+    1 * oort.getTargetServerGroup(
       'app',
       'test2',
       'app-test',

@@ -107,7 +107,7 @@ public interface OortService {
 
   @GET(
       "/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/{scope}/serverGroups/target/{target}")
-  ServerGroup getTargetServerGroupTyped(
+  ServerGroup getTargetServerGroup(
       @Path("app") String app,
       @Path("account") String account,
       @Path("cluster") String cluster,

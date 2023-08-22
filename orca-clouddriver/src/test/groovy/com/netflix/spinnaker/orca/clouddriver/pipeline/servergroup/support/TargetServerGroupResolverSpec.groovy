@@ -144,7 +144,7 @@ class TargetServerGroupResolverSpec extends Specification {
     ))
 
     then:
-    1 * oort.getTargetServerGroupTyped("test", "testCreds", "test-app", "abc", "north-pole", "current_asg") >>
+    1 * oort.getTargetServerGroup("test", "testCreds", "test-app", "abc", "north-pole", "current_asg") >>
       new ServerGroup([
         name  : "test-app-v010",
         region: "north-pole"

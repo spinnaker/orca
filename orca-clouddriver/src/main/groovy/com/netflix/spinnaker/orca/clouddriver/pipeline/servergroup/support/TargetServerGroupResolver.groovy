@@ -67,7 +67,7 @@ class TargetServerGroupResolver {
   private TargetServerGroup resolveByTarget(TargetServerGroup.Params params, Location location) {
     try {
       ServerGroup tsg = fetchWithRetries {
-        oortService.getTargetServerGroupTyped(params.app,
+        oortService.getTargetServerGroup(params.app,
           params.credentials,
           params.cluster,
           params.cloudProvider,

@@ -99,15 +99,14 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
   }
 
   @Override
-  public ServerGroup getTargetServerGroupTyped(
+  public ServerGroup getTargetServerGroup(
       String app,
       String account,
       String cluster,
       String cloudProvider,
       String scope,
       String target) {
-    return getService()
-        .getTargetServerGroupTyped(app, account, cluster, cloudProvider, scope, target);
+    return getService().getTargetServerGroup(app, account, cluster, cloudProvider, scope, target);
   }
 
   @Override
