@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForDestroyedServerGroupTask
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -49,12 +50,12 @@ class WaitForDestroyedAsgTaskSpec extends Specification {
     task.oortService = Mock(OortService) {
       1 * getCluster(*_) >> {
         if (status >= 400) {
-          throw RetrofitError.httpError(
+          throw new SpinnakerHttpException(RetrofitError.httpError(
             null,
             new Response("http://...", status, "...", [], null),
             gsonConverter,
             null
-          )
+          ))
         }
         new Response('..', status, 'ok', [], new TypedString(
           objectMapper.writeValueAsString(body)
