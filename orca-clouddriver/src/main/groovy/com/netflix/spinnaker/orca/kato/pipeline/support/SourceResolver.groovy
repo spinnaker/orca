@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
@@ -29,7 +30,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 
 @Component
 @CompileStatic
@@ -42,7 +42,7 @@ class SourceResolver {
   @Autowired
   TargetServerGroupResolver resolver
 
-  StageData.Source getSource(StageExecution stage) throws RetrofitError, JsonParseException, JsonMappingException {
+  StageData.Source getSource(StageExecution stage) throws JsonParseException, JsonMappingException {
     def stageData = stage.mapTo(StageData)
     if (stageData.source) {
       // targeting a source in a different account and region
@@ -123,15 +123,15 @@ class SourceResolver {
     )
   }
 
-  List<ServerGroup> getExistingAsgs(String app, String account, String cluster, String cloudProvider) throws RetrofitError, JsonParseException, JsonMappingException {
+  List<ServerGroup> getExistingAsgs(String app, String account, String cluster, String cloudProvider) throws JsonParseException, JsonMappingException {
     try {
       def map = cloudDriverService.getCluster(app, account, cluster, cloudProvider)
       map.serverGroups.sort { it.createdTime }
-    } catch (RetrofitError re) {
-      if (re.kind == RetrofitError.Kind.HTTP && re.response.status == 404) {
+    } catch (SpinnakerHttpException e) {
+      if (e.getResponseCode() == 404) {
         return []
       }
-      throw re
+      throw e
     }
   }
 
