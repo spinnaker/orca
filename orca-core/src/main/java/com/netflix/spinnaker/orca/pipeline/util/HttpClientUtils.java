@@ -19,13 +19,11 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.apache.http.*;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.ProtocolException;
 import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
@@ -42,10 +40,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 @Component
 public class HttpClientUtils {
 
   private CloseableHttpClient httpClient;
+  private final UserConfiguredUrlRestrictions urlRestrictions;
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientUtils.class);
   private static final String JVM_HTTP_PROXY_HOST = "http.proxyHost";
   private static final String JVM_HTTP_PROXY_PORT = "http.proxyPort";
@@ -58,6 +64,7 @@ public class HttpClientUtils {
 
   public HttpClientUtils(UserConfiguredUrlRestrictions userConfiguredUrlRestrictions) {
     this.httpClient = create(userConfiguredUrlRestrictions.getHttpClientProperties());
+    this.urlRestrictions = userConfiguredUrlRestrictions;
   }
 
   private CloseableHttpClient create(
@@ -91,10 +98,13 @@ public class HttpClientUtils {
                     laxRedirectStrategy.isRedirected(currentReq, response, context);
 
                 if (isRedirected) {
+                  // verify that we are not redirecting to a restricted url
+                  String redirectLocation = response.getFirstHeader(LOCATION_HEADER).getValue();
+                  urlRestrictions.validateURI(redirectLocation);
+
                   LOGGER.info(
                       "Attempt redirect from {} to {} ",
-                      currentReq.getURI(),
-                      response.getFirstHeader(LOCATION_HEADER).getValue());
+                      currentReq.getURI(), redirectLocation);
 
                   httpClientBuilder.setRedirectStrategy(laxRedirectStrategy).build();
                   return false; // Don't allow retry for redirection
@@ -202,11 +212,14 @@ public class HttpClientUtils {
     public RedirectStrategy getLaxRedirectStrategy() {
       return new LaxRedirectStrategy() {
         @Override
-        public boolean isRedirected(
-            HttpRequest request, HttpResponse response, HttpContext context) {
-
+        public boolean isRedirected(HttpRequest request,
+                                    HttpResponse response,
+                                    HttpContext context) {
           int statusCode = response.getStatusLine().getStatusCode();
-          if ((statusCode >= 300) && (statusCode <= 399)) {
+
+          if (statusCode == HttpStatus.SC_MOVED_PERMANENTLY ||
+              statusCode == HttpStatus.SC_MOVED_TEMPORARILY) {
+
             return response.getFirstHeader(LOCATION_HEADER).getValue() != null
                 && !response.getFirstHeader(LOCATION_HEADER).getValue().isEmpty();
           }

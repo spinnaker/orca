@@ -16,18 +16,21 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.io.IOException;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.http.Fault;
-import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
-import java.io.IOException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 public class HttpClientUtilsTest {
 
@@ -109,8 +112,9 @@ public class HttpClientUtilsTest {
     verify(3, getRequestedFor(urlEqualTo(resource)));
   }
 
-  @Test
-  public void testPermanentlyMovedWithRetryEnabled() throws IOException {
+  @ParameterizedTest
+  @ValueSource(ints = {301, 302})
+  public void testRedirectWithRetryEnabled(int httpStatus) throws IOException {
     // Set up the configuration to enable retry functionality
     config.setHttpClientProperties(
         UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
@@ -121,7 +125,7 @@ public class HttpClientUtilsTest {
         get(resource)
             .willReturn(
                 aResponse()
-                    .withStatus(301) // Moved Permanently
+                    .withStatus(httpStatus)
                     .withHeader("Location", redirectUrl)));
 
     // when:
@@ -129,12 +133,14 @@ public class HttpClientUtilsTest {
         httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
 
     // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
     assertNotNull(response);
+    verify(1, getRequestedFor(urlEqualTo(resource)));
   }
 
-  @Test
-  public void testPermanentlyMovedWithRetryDisabled() throws IOException {
+
+  @ParameterizedTest
+  @ValueSource(ints = {301, 302})
+  public void testRedirectWithRetryDisabled(int httpStatus) throws IOException {
     // Set up the configuration to enable retry functionality
     config.setHttpClientProperties(
         UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(false).build());
@@ -145,20 +151,22 @@ public class HttpClientUtilsTest {
         get(resource)
             .willReturn(
                 aResponse()
-                    .withStatus(301) // Moved Permanently
+                    .withStatus(httpStatus)
                     .withHeader("Location", redirectUrl)));
 
     // when:
     String response =
         httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
 
+
     // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
     assertNotNull(response);
+    verify(1, getRequestedFor(urlEqualTo(resource)));
   }
 
-  @Test
-  public void testTemporaryRedirectWithRetryEnabled() throws IOException {
+  @ParameterizedTest
+  @ValueSource(strings = {"192.168.1.1", "127.0.0.1"})
+  void testRedirectThrowsRetryRequestExceptionForInvalidUrl(String invalidUrl) {
     // Set up the configuration to enable retry functionality
     config.setHttpClientProperties(
         UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
@@ -166,136 +174,16 @@ public class HttpClientUtilsTest {
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
 
     stubFor(
-        get(resource)
+        get(invalidUrl)
             .willReturn(
                 aResponse()
-                    .withStatus(307) // Temporary Redirect
+                    .withStatus(301)
                     .withHeader("Location", redirectUrl)));
 
-    // when:
-    String response =
-        httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-
-    // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
-    assertNotNull(response);
+    // when & then
+    assertThrows(HttpClientUtils.RetryRequestException.class, () -> {
+      httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
+    });
   }
 
-  @Test
-  public void testTemporaryRedirectWithRetryDisabled() throws IOException {
-    // Set up the configuration to enable retry functionality
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(false).build());
-    // Create the HttpClientUtils instance with the configuration
-    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-
-    stubFor(
-        get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(307) // Temporary Redirect
-                    .withHeader("Location", redirectUrl)));
-
-    // when:
-    String response =
-        httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-
-    // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
-    assertNotNull(response);
-  }
-
-  @Test
-  public void testTemporaryRedirectThrowsRetryRequestException() throws IOException {
-    // Set up the configuration to enable retry functionality
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
-    // Create the HttpClientUtils instance with the configuration
-    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-
-    stubFor(
-        get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(307) // Temporary Redirect
-                    .withHeader("Location", "")));
-
-    // then:
-    assertThrows(
-        HttpClientUtils.RetryRequestException.class,
-        () -> {
-          httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-        });
-  }
-
-  @Test
-  public void testPermanentRedirectWithRetryEnabled() throws IOException {
-    // Set up the configuration to enable retry functionality
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
-    // Create the HttpClientUtils instance with the configuration
-    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-
-    stubFor(
-        get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(308) // Permanent Redirect
-                    .withHeader("Location", redirectUrl)));
-
-    // when:
-    String response =
-        httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-
-    // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
-    assertNotNull(response);
-  }
-
-  @Test
-  public void testPermanentRedirectWithRetryDisabled() throws IOException {
-    // Set up the configuration to enable retry functionality
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(false).build());
-    // Create the HttpClientUtils instance with the configuration
-    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-
-    stubFor(
-        get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(308) // Permanent Redirect
-                    .withHeader("Location", redirectUrl)));
-
-    // when:
-    String response =
-        httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-
-    // then:
-    verify(1, getRequestedFor(urlEqualTo(resource)));
-    assertNotNull(response);
-  }
-
-  @Test
-  public void testPermanentRedirectThrowsRetryRequestException() throws IOException {
-    // Set up the configuration to enable retry functionality
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
-    // Create the HttpClientUtils instance with the configuration
-    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-
-    stubFor(
-        get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(308) // Permanent Redirect
-                    .withHeader("Location", "")));
-
-    // then:
-    assertThrows(
-        HttpClientUtils.RetryRequestException.class,
-        () -> {
-          httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-        });
-  }
 }
