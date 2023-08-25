@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.model.Ami
@@ -130,6 +132,23 @@ class GetCommitsTask implements DiffTask {
       } else { // retry on other status codes
         return retryOnException("retrofit error (${e.message})", repoInfo, sourceInfo, targetInfo, retriesRemaining, e)
       }
+    } catch (SpinnakerHttpException e) {
+      // Some retrofit objects (e.g. cloudDriverService) use
+      // SpinnakerRetrofitErrorHandler and so throw Spinnaker*Exception
+      // exceptions, while other retrofit objects throw RetrofitErrors.  One day
+      // perhaps everything will use SpinnakerRetrofitErrorHandler.  Until then,
+      // duplicate the logic for handling RetrofitError also for
+      // Spinnaker*Exception.
+      if (e.getResponseCode() == 404) {
+        // just give up on 404
+        return handle404(repoInfo, sourceInfo, targetInfo, e)
+      } else { // retry on other status codes
+        return retryOnException("SpinnakerHttpException (${e.message})", repoInfo, sourceInfo, targetInfo, retriesRemaining, e)
+      }
+    } catch (SpinnakerServerException e) {
+      // give up on internal errors.  Note that this includes network errors
+      // which the above RetrofitError handling swallows.
+      return giveUpOnException(repoInfo, sourceInfo, targetInfo, e)
     } catch (Exception f) { // retry on everything else
       return retryOnException("unexpected exception", repoInfo, sourceInfo, targetInfo, retriesRemaining, f)
     } catch (Throwable g) {

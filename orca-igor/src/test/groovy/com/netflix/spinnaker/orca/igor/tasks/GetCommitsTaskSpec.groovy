@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.igor.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
@@ -403,14 +404,14 @@ class GetCommitsTaskSpec extends Specification {
 
     1 * cloudDriverService.getByAmiId("aws", account, region, sourceImage) >> {
       if (sourceThrowException) {
-        throw new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null)
+        throw new SpinnakerHttpException(new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null))
       }
       return sourceResponse
     }
 
     (sourceThrowException ? 0 : 1) * cloudDriverService.getByAmiId("aws", account, region, targetImage) >> {
       if (targetThrowException) {
-        throw new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null)
+        throw new SpinnakerHttpException(new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null))
       }
       return targetResponse
     }
