@@ -402,14 +402,14 @@ class GetCommitsTaskSpec extends Specification {
     1 * cloudDriverService.getServerGroupFromCluster(app, account, cluster, serverGroup, region, "aws") >> response
 
     1 * cloudDriverService.getByAmiId("aws", account, region, sourceImage) >> {
-      if (sourceThrowRetrofitError) {
+      if (sourceThrowException) {
         throw new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null)
       }
       return sourceResponse
     }
 
-    (sourceThrowRetrofitError ? 0 : 1) * cloudDriverService.getByAmiId("aws", account, region, targetImage) >> {
-      if (targetThrowRetrofitError) {
+    (sourceThrowException ? 0 : 1) * cloudDriverService.getByAmiId("aws", account, region, targetImage) >> {
+      if (targetThrowException) {
         throw new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null)
       }
       return targetResponse
@@ -432,9 +432,9 @@ class GetCommitsTaskSpec extends Specification {
     jobState = 'SUCCESS'
     taskStatus = SUCCEEDED
 
-    cluster | serverGroup | targetServerGroup | sourceThrowRetrofitError | targetThrowRetrofitError
-    "myapp" | "myapp" | "myapp-v000" | true | false
-    "myapp" | "myapp" | "myapp-v000" | false | true
+    cluster | serverGroup | targetServerGroup | sourceThrowException | targetThrowException
+    "myapp" | "myapp"     | "myapp-v000"      | true                 | false
+    "myapp" | "myapp"     | "myapp-v000"      | false                | true
   }
 
   def "igor service 404 results in success"() {
