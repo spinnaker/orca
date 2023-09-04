@@ -16,21 +16,20 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Fail.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.io.IOException;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Fail.fail;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HttpClientUtilsTest {
 
@@ -123,10 +122,7 @@ public class HttpClientUtilsTest {
 
     stubFor(
         get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(httpStatus)
-                    .withHeader("Location", redirectUrl)));
+            .willReturn(aResponse().withStatus(httpStatus).withHeader("Location", redirectUrl)));
 
     // when:
     String response =
@@ -136,7 +132,6 @@ public class HttpClientUtilsTest {
     assertNotNull(response);
     verify(1, getRequestedFor(urlEqualTo(resource)));
   }
-
 
   @ParameterizedTest
   @ValueSource(ints = {301, 302})
@@ -149,15 +144,11 @@ public class HttpClientUtilsTest {
 
     stubFor(
         get(resource)
-            .willReturn(
-                aResponse()
-                    .withStatus(httpStatus)
-                    .withHeader("Location", redirectUrl)));
+            .willReturn(aResponse().withStatus(httpStatus).withHeader("Location", redirectUrl)));
 
     // when:
     String response =
         httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-
 
     // then:
     assertNotNull(response);
@@ -175,15 +166,13 @@ public class HttpClientUtilsTest {
 
     stubFor(
         get(invalidUrl)
-            .willReturn(
-                aResponse()
-                    .withStatus(301)
-                    .withHeader("Location", redirectUrl)));
+            .willReturn(aResponse().withStatus(301).withHeader("Location", redirectUrl)));
 
     // when & then
-    assertThrows(HttpClientUtils.RetryRequestException.class, () -> {
-      httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
-    });
+    assertThrows(
+        HttpClientUtils.RetryRequestException.class,
+        () -> {
+          httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
+        });
   }
-
 }

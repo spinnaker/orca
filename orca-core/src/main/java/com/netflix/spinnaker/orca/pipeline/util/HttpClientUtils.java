@@ -19,6 +19,12 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -39,13 +45,6 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class HttpClientUtils {
@@ -103,8 +102,7 @@ public class HttpClientUtils {
                   urlRestrictions.validateURI(redirectLocation);
 
                   LOGGER.info(
-                      "Attempt redirect from {} to {} ",
-                      currentReq.getURI(), redirectLocation);
+                      "Attempt redirect from {} to {} ", currentReq.getURI(), redirectLocation);
 
                   httpClientBuilder.setRedirectStrategy(laxRedirectStrategy).build();
                   return false; // Don't allow retry for redirection
@@ -194,9 +192,7 @@ public class HttpClientUtils {
         return Integer.parseInt(proxyPort);
       } catch (NumberFormatException e) {
         LOGGER.warn(
-            "Invalid proxy port number: {}. Using default port: {}",
-            proxyPort,
-            defaultProxyPort);
+            "Invalid proxy port number: {}. Using default port: {}", proxyPort, defaultProxyPort);
       }
     }
     return defaultProxyPort;
@@ -212,13 +208,12 @@ public class HttpClientUtils {
     public RedirectStrategy getLaxRedirectStrategy() {
       return new LaxRedirectStrategy() {
         @Override
-        public boolean isRedirected(HttpRequest request,
-                                    HttpResponse response,
-                                    HttpContext context) {
+        public boolean isRedirected(
+            HttpRequest request, HttpResponse response, HttpContext context) {
           int statusCode = response.getStatusLine().getStatusCode();
 
-          if (statusCode == HttpStatus.SC_MOVED_PERMANENTLY ||
-              statusCode == HttpStatus.SC_MOVED_TEMPORARILY) {
+          if (statusCode == HttpStatus.SC_MOVED_PERMANENTLY
+              || statusCode == HttpStatus.SC_MOVED_TEMPORARILY) {
 
             return response.getFirstHeader(LOCATION_HEADER).getValue() != null
                 && !response.getFirstHeader(LOCATION_HEADER).getValue().isEmpty();
