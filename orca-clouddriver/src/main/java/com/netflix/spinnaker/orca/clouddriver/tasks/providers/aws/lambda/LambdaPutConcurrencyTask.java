@@ -15,45 +15,44 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.LambdaDeploymentStrategyEnum;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaConcurrencyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaPutConcurrencyTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaPutConcurrencyTask.class);
-  private static final String CLOUDDRIVER_PUT_PROVISIONED_CONCURRENCY_PATH =
-      "/aws/ops/putLambdaProvisionedConcurrency";
-  private static final String CLOUDDRIVER_PUT_RESERVED_CONCURRENCY_PATH =
-      "/aws/ops/putLambdaReservedConcurrency";
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private LambdaCloudDriverUtils utils;
-  private String cloudDriverUrl;
+  public LambdaPutConcurrencyTask(KatoService katoService, ObjectMapper objectMapper) {
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaPutConcurrencyTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaPutConcurrencyTask...");
     prepareTask(stage);
-    LambdaConcurrencyInput inp = utils.getInput(stage, LambdaConcurrencyInput.class);
+
+    LambdaConcurrencyInput inp = stage.mapTo(LambdaConcurrencyInput.class);
     inp.setAppName(stage.getExecution().getApplication());
 
     if ((inp.getReservedConcurrentExecutions() == null
@@ -84,22 +83,25 @@ public class LambdaPutConcurrencyTask implements LambdaStageBaseTask {
   }
 
   private LambdaCloudOperationOutput putReservedConcurrency(LambdaConcurrencyInput inp) {
-    String rawString = utils.asString(inp);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_PUT_RESERVED_CONCURRENCY_PATH;
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for putReservedConcurrency: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("putLambdaReservedConcurrency");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   private LambdaCloudOperationOutput putProvisionedConcurrency(LambdaConcurrencyInput inp) {
-    inp.setQualifier(inp.getAliasName());
-    String rawString = utils.asString(inp);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_PUT_PROVISIONED_CONCURRENCY_PATH;
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for putProvisionedConcurrency: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("putLambdaProvisionedConcurrency");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   @Nullable
@@ -107,7 +109,4 @@ public class LambdaPutConcurrencyTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return TaskResult.builder(ExecutionStatus.SKIPPED).build();
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

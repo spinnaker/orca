@@ -16,48 +16,46 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaTrafficUpdateInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaWeightedStrategyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaDeploymentStrategyOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class LambdaWeightedDeploymentStrategy
     extends BaseLambdaDeploymentStrategy<LambdaWeightedStrategyInput> {
 
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  @Autowired CloudDriverConfigurationProperties props;
+  public LambdaWeightedDeploymentStrategy(
+      LambdaUtils lambdaUtils, KatoService katoService, ObjectMapper objectMapper) {
+    super(lambdaUtils, katoService, objectMapper);
+  }
 
   @Override
   public LambdaDeploymentStrategyOutput deploy(LambdaWeightedStrategyInput inp) {
-    String cloudDriverUrl = props.getCloudDriverBaseUrl();
     Map<String, Object> outputMap = new HashMap<>();
     outputMap.put("deployment:majorVersionDeployed", inp.getMajorFunctionVersion());
     outputMap.put("deployment:minorVersionDeployed", inp.getMinorFunctionVersion());
     outputMap.put("deployment:aliasDeployed", inp.getAliasName());
     outputMap.put("deployment:strategyUsed", "WeightedDeploymentStrategy");
+
     // TODO: Form a new inputObject such as SimpleStrategyInput and just have the
-    LambdaCloudOperationOutput out = postToCloudDriver(inp, cloudDriverUrl, utils);
+    LambdaCloudOperationOutput out = updateAlias(inp);
     out.setOutputMap(outputMap);
-    LambdaDeploymentStrategyOutput deployOutput = LambdaDeploymentStrategyOutput.builder().build();
-    deployOutput.setSucceeded(true);
-    deployOutput.setOutput(out);
-    return deployOutput;
+
+    return LambdaDeploymentStrategyOutput.builder().succeeded(true).output(out).build();
   }
 
   @Override
   public LambdaWeightedStrategyInput setupInput(StageExecution stage) {
-    LambdaTrafficUpdateInput aliasInp = utils.getInput(stage, LambdaTrafficUpdateInput.class);
-    LambdaWeightedStrategyInput weightedInput =
-        utils.getInput(stage, LambdaWeightedStrategyInput.class);
+    LambdaTrafficUpdateInput aliasInp = stage.mapTo(LambdaTrafficUpdateInput.class);
+    LambdaWeightedStrategyInput weightedInput = stage.mapTo(LambdaWeightedStrategyInput.class);
     weightedInput.setAppName(stage.getExecution().getApplication());
     weightedInput.setAccount(aliasInp.getAccount());
     weightedInput.setCredentials(aliasInp.getAccount());
@@ -69,10 +67,5 @@ public class LambdaWeightedDeploymentStrategy
     weightedInput.setMinorFunctionVersion(
         getVersion(stage, aliasInp.getVersionNameB(), aliasInp.getVersionNumberB()));
     return weightedInput;
-  }
-
-  @Override
-  public LambdaCloudDriverUtils getUtils() {
-    return utils;
   }
 }

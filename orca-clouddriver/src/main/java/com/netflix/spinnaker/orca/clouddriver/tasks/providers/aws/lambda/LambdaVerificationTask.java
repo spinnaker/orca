@@ -19,39 +19,37 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverTaskResults;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaVerificationTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaVerificationTask.class);
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils utils;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaVerificationTask(LambdaUtils utils) {
+    this.utils = utils;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing lambdaVerificationTask...");
+    log.debug("Executing lambdaVerificationTask...");
     prepareTask(stage);
     try {
       return doVerify(stage);
     } catch (Throwable e) {
-      logger.error("Exception verifying task", e);
+      log.error("Exception verifying task", e);
       logException(stage, e);
       addExceptionToOutput(stage, e);
       return formErrorTaskResult(stage, "Exception during task verification");
@@ -74,7 +72,7 @@ public class LambdaVerificationTask implements LambdaStageBaseTask {
       urlList.addAll((List<String>) stageContext.get(LambdaStageConstants.aliasTaskKey));
 
     List<LambdaCloudDriverTaskResults> listOfTaskResults =
-        urlList.stream().map(url -> utils.verifyStatus(url)).collect(Collectors.toList());
+        urlList.stream().map(utils::verifyStatus).collect(Collectors.toList());
 
     boolean anyRunning =
         listOfTaskResults.stream().anyMatch(taskResult -> !taskResult.getStatus().isCompleted());
@@ -129,12 +127,7 @@ public class LambdaVerificationTask implements LambdaStageBaseTask {
   }
 
   @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
-
-  @Override
   public Collection<String> aliases() {
-    List<String> ss = new ArrayList<>();
-    ss.add("lambdaVerificationTask");
-    return ss;
+    return List.of("lambdaVerificationTask");
   }
 }

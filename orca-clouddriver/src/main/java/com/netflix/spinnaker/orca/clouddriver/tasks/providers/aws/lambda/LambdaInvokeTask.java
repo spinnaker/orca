@@ -16,46 +16,53 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaInvokeStageInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaTrafficUpdateInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaInvokeTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaInvokeTask.class);
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils utils;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  static String CLOUDDRIVER_INVOKE_LAMBDA_FUNCTION_PATH = "/aws/ops/invokeLambdaFunction";
+  public LambdaInvokeTask(LambdaUtils utils, KatoService katoService, ObjectMapper objectMapper) {
+    this.utils = utils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaInvokeTask...");
+    log.debug("Executing LambdaInvokeTask...");
     prepareTask(stage);
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, true);
+
+    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
     if (lf == null) {
-      logger.error("Could not find lambda");
+      log.error("Could not find lambda");
       return this.formErrorTaskResult(stage, "No such lambda found.");
     }
-    LambdaInvokeStageInput ldi = utils.getInput(stage, LambdaInvokeStageInput.class);
-    LambdaTrafficUpdateInput tui = utils.getInput(stage, LambdaTrafficUpdateInput.class);
+
+    LambdaInvokeStageInput ldi = stage.mapTo(LambdaInvokeStageInput.class);
+    LambdaTrafficUpdateInput tui = stage.mapTo(LambdaTrafficUpdateInput.class);
     ldi.setPayloadArtifact(tui.getPayloadArtifact().getArtifact());
     ldi.setQualifier(
         StringUtils.isNullOrEmpty(ldi.getAliasName()) ? "$LATEST" : ldi.getAliasName());
@@ -63,7 +70,7 @@ public class LambdaInvokeTask implements LambdaStageBaseTask {
     ldi.setCredentials(ldi.getAccount());
     List<String> urlList = new ArrayList<>();
     for (int i = 0; i < ldi.getExecutionCount(); i++) {
-      String url = this.invokeLambdaFunction(ldi);
+      String url = invokeLambdaFunction(ldi);
       urlList.add(url);
     }
     addToTaskContext(stage, "urlList", urlList);
@@ -71,19 +78,15 @@ public class LambdaInvokeTask implements LambdaStageBaseTask {
   }
 
   private String invokeLambdaFunction(LambdaInvokeStageInput ldi) {
-    String cloudDriverUrl = props.getCloudDriverBaseUrl();
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_INVOKE_LAMBDA_FUNCTION_PATH;
-    String rawString = utils.asString(ldi);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for lambda invocation: " + url);
-    return url;
+    OperationContext context = objectMapper.convertValue(ldi, new TypeReference<>() {});
+    context.setOperationType("invokeLambdaFunction");
+
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+    return result.getResourceUri();
   }
 
   @Override
   public Collection<String> aliases() {
-    List<String> ss = new ArrayList<>();
-    ss.add("lambdaInvokeTask");
-    return ss;
+    return List.of("lambdaInvokeTask");
   }
 }

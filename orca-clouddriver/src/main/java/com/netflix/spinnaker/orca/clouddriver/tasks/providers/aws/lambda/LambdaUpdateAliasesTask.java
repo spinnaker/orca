@@ -16,47 +16,50 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaUpdateAliasesInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaUpdateAliasesTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaUpdateAliasesTask.class);
-  private static final String CLOUDDRIVER_UPDATE_ALIAS_PATH = "/aws/ops/upsertLambdaFunctionAlias";
   private static final String DEFAULT_ALIAS_DESCRIPTION = "Created via Spinnaker";
   private static final String LATEST_VERSION_STRING = "$LATEST";
 
-  @Autowired CloudDriverConfigurationProperties props;
-  private String cloudDriverUrl;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaUpdateAliasesTask(KatoService katoService, ObjectMapper objectMapper) {
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaUpdateAliasesTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaUpdateAliasesTask...");
     prepareTask(stage);
+
     if (!shouldAddAliases(stage)) {
       addToOutput(stage, LambdaStageConstants.lambaAliasesUpdatedKey, Boolean.FALSE);
       return taskComplete(stage);
     }
+
     List<LambdaCloudOperationOutput> output = updateLambdaAliases(stage);
     buildContextOutput(stage, output);
     addToTaskContext(stage, LambdaStageConstants.lambaAliasesUpdatedKey, Boolean.TRUE);
@@ -79,24 +82,35 @@ public class LambdaUpdateAliasesTask implements LambdaStageBaseTask {
     inp.setAliasDescription(DEFAULT_ALIAS_DESCRIPTION);
     inp.setAliasName(alias);
     inp.setMajorFunctionVersion(LATEST_VERSION_STRING);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_UPDATE_ALIAS_PATH;
-    String rawString = utils.asString(inp);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for updateLambdaAliases: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("upsertLambdaFunctionAlias");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   private List<LambdaCloudOperationOutput> updateLambdaAliases(StageExecution stage) {
     List<LambdaCloudOperationOutput> result = new ArrayList<>();
-    List<String> aliases = (List<String>) stage.getContext().get("aliases");
-    LambdaUpdateAliasesInput inp = utils.getInput(stage, LambdaUpdateAliasesInput.class);
+
+    LambdaUpdateAliasesInput inp = stage.mapTo(LambdaUpdateAliasesInput.class);
     inp.setAppName(stage.getExecution().getApplication());
     inp.setCredentials(inp.getAccount());
+
+    List<String> aliases = (List<String>) stage.getContext().get("aliases");
     for (String alias : aliases) {
-      if (StringUtils.isNullOrEmpty(alias)) continue;
+      if (StringUtils.isNullOrEmpty(alias)) {
+        continue;
+      }
+
       String formattedAlias = alias.trim();
-      if (StringUtils.isNullOrEmpty(formattedAlias)) continue;
+      if (StringUtils.isNullOrEmpty(formattedAlias)) {
+        continue;
+      }
+
       LambdaCloudOperationOutput operationOutput = updateSingleAlias(inp, formattedAlias);
       result.add(operationOutput);
     }
@@ -108,7 +122,4 @@ public class LambdaUpdateAliasesTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return TaskResult.builder(ExecutionStatus.SKIPPED).build();
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

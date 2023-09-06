@@ -27,13 +27,12 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.config.LambdaConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverErrorObject;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverTaskResults;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaTrafficUpdateInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaVerificationStatusOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +54,7 @@ public class LambdaTrafficUpdateVerificationTaskTest {
 
   @Mock private CloudDriverConfigurationProperties propsMock;
 
-  @Mock private LambdaCloudDriverUtils lambdaCloudDriverUtilsMock;
+  @Mock private LambdaUtils lambdaCloudDriverUtilsMock;
 
   @Mock private StageExecution stageExecution;
 
@@ -81,11 +80,7 @@ public class LambdaTrafficUpdateVerificationTaskTest {
             .aliasName("develop")
             .deploymentStrategy("$BLUEGREEN")
             .build();
-    Mockito.when(lambdaCloudDriverUtilsMock.postToCloudDriver(Mockito.any(), Mockito.any()))
-        .thenReturn(LambdaCloudDriverResponse.builder().build());
-    Mockito.when(
-            lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaTrafficUpdateInput.class))
-        .thenReturn(ldi);
+    Mockito.when(stageExecution.mapTo(LambdaTrafficUpdateInput.class)).thenReturn(ldi);
   }
 
   @Test
@@ -142,7 +137,7 @@ public class LambdaTrafficUpdateVerificationTaskTest {
     Mockito.when(config.getCloudDriverRetrieveNewPublishedLambdaWaitSeconds()).thenReturn(40);
     Mockito.when(config.getCacheRefreshRetryWaitTime()).thenReturn(15);
     Mockito.when(config.getCloudDriverRetrieveMaxValidateWeightsTimeSeconds()).thenReturn(240);
-    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution, false))
+    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution))
         .thenReturn(lambdaDefinition);
 
     assertEquals(
@@ -170,7 +165,7 @@ public class LambdaTrafficUpdateVerificationTaskTest {
     Mockito.when(config.getCloudDriverRetrieveNewPublishedLambdaWaitSeconds()).thenReturn(1);
     Mockito.when(config.getCacheRefreshRetryWaitTime()).thenReturn(1);
     Mockito.when(config.getCloudDriverRetrieveMaxValidateWeightsTimeSeconds()).thenReturn(1);
-    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution, false))
+    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution))
         .thenReturn(lambdaDefinition);
 
     assertEquals(

@@ -19,40 +19,35 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class LambdaOutputTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaOutputTask.class);
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils lambdaUtils;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaOutputTask(LambdaUtils lambdaUtils) {
+    this.lambdaUtils = lambdaUtils;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaOutputTask...");
     prepareTask(stage);
-    Boolean justCreated =
-        (Boolean) stage.getContext().getOrDefault(LambdaStageConstants.lambaCreatedKey, false);
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, justCreated);
-    if (lf != null) {
-      addToOutput(stage, LambdaStageConstants.revisionIdKey, lf.getRevisionId());
-      addToOutput(stage, LambdaStageConstants.lambdaObjectKey, lf);
+
+    LambdaDefinition lambda = lambdaUtils.retrieveLambdaFromCache(stage);
+    if (lambda != null) {
+      addToOutput(stage, LambdaStageConstants.revisionIdKey, lambda.getRevisionId());
+      addToOutput(stage, LambdaStageConstants.lambdaObjectKey, lambda);
     }
+
     copyContextToOutput(stage);
     return taskComplete(stage);
   }
@@ -64,12 +59,7 @@ public class LambdaOutputTask implements LambdaStageBaseTask {
   }
 
   @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
-
-  @Override
   public Collection<String> aliases() {
-    List<String> ss = new ArrayList<>();
-    ss.add("lambdaOutputTask");
-    return ss;
+    return List.of("lambdaOutputTask");
   }
 }

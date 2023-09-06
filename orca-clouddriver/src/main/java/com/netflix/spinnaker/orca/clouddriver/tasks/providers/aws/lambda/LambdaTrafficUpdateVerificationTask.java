@@ -21,32 +21,30 @@ import com.amazonaws.services.lambda.model.AliasRoutingConfiguration;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.config.LambdaConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.LambdaDeploymentStrategyEnum;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverTaskResults;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaTrafficUpdateInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaTrafficUpdateVerificationTask implements LambdaStageBaseTask {
 
-  private static final Logger logger =
-      LoggerFactory.getLogger(LambdaTrafficUpdateVerificationTask.class);
+  private final LambdaUtils utils;
+  private final LambdaConfigurationProperties config;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  @Autowired LambdaConfigurationProperties config;
+  public LambdaTrafficUpdateVerificationTask(
+      LambdaUtils utils, LambdaConfigurationProperties config) {
+    this.utils = utils;
+    this.config = config;
+  }
 
   @Nonnull
   @Override
@@ -102,11 +100,11 @@ public class LambdaTrafficUpdateVerificationTask implements LambdaStageBaseTask 
         TimeUnit.SECONDS.toMillis(config.getCloudDriverRetrieveNewPublishedLambdaWaitSeconds()));
     AliasRoutingConfiguration weights = null;
     long startTime = System.currentTimeMillis();
-    LambdaTrafficUpdateInput inp = utils.getInput(stage, LambdaTrafficUpdateInput.class);
+    LambdaTrafficUpdateInput inp = stage.mapTo(LambdaTrafficUpdateInput.class);
     boolean status = false;
     do {
       utils.await(TimeUnit.SECONDS.toMillis(config.getCacheRefreshRetryWaitTime()));
-      LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, false);
+      LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
       Optional<AliasConfiguration> aliasConfiguration =
           lf.getAliasConfigurations().stream()
               .filter(al -> al.getName().equals(inp.getAliasName()))
@@ -120,7 +118,7 @@ public class LambdaTrafficUpdateVerificationTask implements LambdaStageBaseTask 
       if ((System.currentTimeMillis() - startTime)
           > TimeUnit.SECONDS.toMillis(
               config.getCloudDriverRetrieveMaxValidateWeightsTimeSeconds())) {
-        logger.warn(
+        log.warn(
             "alias weights did not update in {} seconds. waited {} seconds",
             config.getCloudDriverRetrieveMaxValidateWeightsTimeSeconds(),
             TimeUnit.MILLISECONDS.toSeconds((System.currentTimeMillis() - startTime)));

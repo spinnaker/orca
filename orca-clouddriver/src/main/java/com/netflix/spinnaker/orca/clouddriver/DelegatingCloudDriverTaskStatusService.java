@@ -31,4 +31,9 @@ public class DelegatingCloudDriverTaskStatusService
   public Task lookupTask(String id) {
     return getService().lookupTask(id);
   }
+
+  @Override
+  public Task lookupTaskWithUri(String uri) {
+    return getService().lookupTaskWithUri(uri);
+  }
 }

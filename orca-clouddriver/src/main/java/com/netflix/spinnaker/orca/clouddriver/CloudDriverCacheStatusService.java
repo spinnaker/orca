@@ -20,9 +20,16 @@ import java.util.Collection;
 import java.util.Map;
 import retrofit.http.GET;
 import retrofit.http.Path;
+import retrofit.http.Query;
 
 public interface CloudDriverCacheStatusService {
   @GET("/cache/{cloudProvider}/{type}")
   Collection<Map> pendingForceCacheUpdates(
       @Path("cloudProvider") String cloudProvider, @Path("type") String type);
+
+  @GET("/cache/{cloudProvider}/{type}")
+  Collection<Map> pendingForceCacheUpdatesById(
+      @Path("cloudProvider") String cloudProvider,
+      @Path("type") String type,
+      @Query("id") String id);
 }

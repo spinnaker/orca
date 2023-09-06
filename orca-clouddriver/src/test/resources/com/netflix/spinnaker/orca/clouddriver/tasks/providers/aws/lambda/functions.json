@@ -1,0 +1,39 @@
+[
+  {
+    "account": "account1",
+    "aliasConfigurations": [],
+    "code": {
+      "location": "https:\\/\\/awslambda-us-west-2-tasks.s3.us-west-2.amazonaws.com\\/snapshots\\/569630529054\\/hello-world-9d719f9e",
+      "repositoryType": "S3"
+    },
+    "codeSha256": "gEfN8j47XTW9VAGo6+dTbppFm3HZRnsOFI3\\/C6v05Xs=",
+    "codeSize": 343,
+    "description": "A starter AWS Lambda function.",
+    "eventSourceMappings": [],
+    "fileSystemConfigs": [],
+    "functionArn": "arn:aws:lambda:us-west-2:569630529054:function:hello-world",
+    "functionName": "function-test",
+    "handler": "lambda_function.lambda_handler",
+    "lastModified": "2021-04-19T22:58:03.358+0000",
+    "layers": [],
+    "memorySize": 128,
+    "packageType": "Zip",
+    "region": "us-west-2",
+    "revisionId": "dc635189-fb73-4bd7-93d5-3b955568101e",
+    "revisions": {
+      "dc635189-fb73-4bd7-93d5-3b955568101e": "$LATEST"
+    },
+    "role": "arn:aws:iam::569630529054:role\\/service-role\\/hello-world-role-ff9v8sy0",
+    "runtime": "python3.7",
+    "state": "Active",
+    "tags": {
+      "lambda-console:blueprint": "hello-world-python"
+    },
+    "targetGroups": [],
+    "timeout": 3,
+    "tracingConfig": {
+      "mode": "PassThrough"
+    },
+    "version": "$LATEST"
+  }
+]

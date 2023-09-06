@@ -23,4 +23,7 @@ import retrofit.http.Path;
 public interface CloudDriverTaskStatusService {
   @GET("/task/{id}")
   Task lookupTask(@Path("id") String id);
+
+  @GET("{uri}")
+  Task lookupTaskWithUri(@Path(value = "fullUrl", encode = false) String uri);
 }

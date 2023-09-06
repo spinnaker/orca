@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import com.netflix.spinnaker.orca.clouddriver.model.Ami;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.ManifestCoordinates;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -129,6 +130,11 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
   @Override
   public Response getInstance(String account, String region, String instanceId) {
     return getService().getInstance(account, region, instanceId);
+  }
+
+  @Override
+  public List<LambdaDefinition> getFunction(String account, String region, String functionName) {
+    return getService().getFunction(account, region, functionName);
   }
 
   @Override

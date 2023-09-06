@@ -16,47 +16,55 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.*;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaGetInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaPublisVersionInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
-public class LambdaPublishVersionTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaPublishVersionTask.class);
-  private static final String CLOUDDRIVER_PUBLISH_VERSION_PATH =
-      "/aws/ops/publishLambdaFunctionVersion";
+@Slf4j
+public class LambdaPublishVersionTask implements LambdaStageBaseTask, CloudProviderAware {
 
-  @Autowired CloudDriverConfigurationProperties props;
-  private String cloudDriverUrl;
+  private final LambdaUtils utils;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaPublishVersionTask(
+      LambdaUtils utils, KatoService katoService, ObjectMapper objectMapper) {
+    this.utils = utils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaPublishVersionTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaPublishVersionTask...");
     prepareTask(stage);
+
     if (!requiresVersionPublish(stage)) {
       addToOutput(stage, LambdaStageConstants.lambaVersionPublishedKey, Boolean.FALSE);
       return taskComplete(stage);
     }
+
     LambdaCloudOperationOutput output = this.publishVersion(stage);
     addCloudOperationToContext(stage, output, LambdaStageConstants.publishVersionUrlKey);
-    this.addToTaskContext(stage, LambdaStageConstants.lambaVersionPublishedKey, Boolean.TRUE);
+
+    addToTaskContext(stage, LambdaStageConstants.lambaVersionPublishedKey, Boolean.TRUE);
     return taskComplete(stage);
   }
 
@@ -64,13 +72,17 @@ public class LambdaPublishVersionTask implements LambdaStageBaseTask {
     Boolean justCreated =
         (Boolean)
             stage.getContext().getOrDefault(LambdaStageConstants.lambaCreatedKey, Boolean.FALSE);
-    if (justCreated) return false;
+    if (justCreated) {
+      return false;
+    }
+
     Boolean requiresPublishFlag =
         (Boolean) stage.getContext().getOrDefault("publish", Boolean.FALSE);
-    if (!requiresPublishFlag) return false;
-    LambdaGetInput lgi = utils.getInput(stage, LambdaGetInput.class);
-    lgi.setAppName(stage.getExecution().getApplication());
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, true);
+    if (!requiresPublishFlag) {
+      return false;
+    }
+
+    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
     String newRevisionId = lf.getRevisionId();
     String origRevisionId =
         (String) stage.getContext().get(LambdaStageConstants.originalRevisionIdKey);
@@ -79,17 +91,21 @@ public class LambdaPublishVersionTask implements LambdaStageBaseTask {
   }
 
   private LambdaCloudOperationOutput publishVersion(StageExecution stage) {
-    LambdaPublisVersionInput inp = utils.getInput(stage, LambdaPublisVersionInput.class);
+    LambdaPublisVersionInput inp = stage.mapTo(LambdaPublisVersionInput.class);
     inp.setAppName(stage.getExecution().getApplication());
     inp.setCredentials(inp.getAccount());
-    String rawString = utils.asString(inp);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_PUBLISH_VERSION_PATH;
+
     String revisionId = (String) stage.getContext().get(LambdaStageConstants.newRevisionIdKey);
     inp.setRevisionId(revisionId);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for publishVersion: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("publishLambdaFunctionVersion");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   @Nullable
@@ -97,7 +113,4 @@ public class LambdaPublishVersionTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return TaskResult.builder(ExecutionStatus.SKIPPED).build();
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

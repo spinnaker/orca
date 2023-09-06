@@ -16,37 +16,35 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.*;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaBlueGreenStrategyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaTrafficUpdateInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaDeploymentStrategyOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaInvokeFunctionOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
+@Slf4j
 public class LambdaBlueGreenDeploymentStrategy
     extends BaseLambdaDeploymentStrategy<LambdaBlueGreenStrategyInput> {
-  private static final Logger logger =
-      LoggerFactory.getLogger(LambdaBlueGreenDeploymentStrategy.class);
 
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  @Autowired CloudDriverConfigurationProperties props;
-
-  static String CLOUDDRIVER_INVOKE_LAMBDA_FUNCTION_PATH = "/aws/ops/invokeLambdaFunction";
+  public LambdaBlueGreenDeploymentStrategy(
+      LambdaUtils utils, KatoService katoService, ObjectMapper objectMapper) {
+    super(utils, katoService, objectMapper);
+  }
 
   @Override
   public LambdaDeploymentStrategyOutput deploy(LambdaBlueGreenStrategyInput inp) {
@@ -58,11 +56,12 @@ public class LambdaBlueGreenDeploymentStrategy
       LambdaCloudOperationOutput cloudOperationOutput =
           LambdaCloudOperationOutput.builder().build();
       LambdaDeploymentStrategyOutput deploymentStrategyOutput =
-          LambdaDeploymentStrategyOutput.builder().build();
-      deploymentStrategyOutput.setSucceeded(false);
-      deploymentStrategyOutput.setErrorMessage(results.getRight());
-      deploymentStrategyOutput.setOutput(cloudOperationOutput);
-      logger.error("BlueGreen Deployment failed: " + results.getRight());
+          LambdaDeploymentStrategyOutput.builder()
+              .succeeded(false)
+              .errorMessage(results.getRight())
+              .output(cloudOperationOutput)
+              .build();
+      log.error("BlueGreen Deployment failed: " + results.getRight());
       return deploymentStrategyOutput;
     }
   }
@@ -70,23 +69,23 @@ public class LambdaBlueGreenDeploymentStrategy
   private Pair<Boolean, String> verifyResults(
       LambdaBlueGreenStrategyInput inp, LambdaInvokeFunctionOutput output) {
     int timeout = inp.getTimeout() * 1000;
-    String url = output.getUrl();
     int sleepTime = 10000;
+
+    String taskUri = output.getUrl();
 
     LambdaCloudDriverTaskResults taskResult = null;
     boolean done = false;
     while (timeout > 0) {
-      taskResult = utils.verifyStatus(url);
+      taskResult = lambdaUtils.verifyStatus(taskUri);
       if (taskResult.getStatus().isCompleted()) {
         done = true;
         break;
       }
       try {
-        utils.await();
+        lambdaUtils.await();
         timeout -= sleepTime;
       } catch (Throwable e) {
-        logger.error("Error waiting for blue green test to complete");
-        continue;
+        log.error("Error waiting for blue green test to complete");
       }
     }
 
@@ -96,9 +95,12 @@ public class LambdaBlueGreenDeploymentStrategy
       return Pair.of(Boolean.FALSE, "Lambda Invocation returned failure");
     }
 
-    LambdaCloudDriverInvokeOperationResults invokeResponse = utils.getLambdaInvokeResults(url);
+    LambdaCloudDriverInvokeOperationResults invokeResponse =
+        lambdaUtils.getLambdaInvokeResults(taskUri);
     String expected =
-        utils.getPipelinesArtifactContent(inp.getOutputArtifact()).replaceAll("[\\n\\t ]", "");
+        lambdaUtils
+            .getPipelinesArtifactContent(inp.getOutputArtifact())
+            .replaceAll("[\\n\\t ]", "");
     String actual = null;
     if (invokeResponse != null) {
       if (invokeResponse.getBody() != null) {
@@ -113,10 +115,10 @@ public class LambdaBlueGreenDeploymentStrategy
           String.format(
               "BlueGreenDeployment failed: Comparison failed. expected : [%s], actual : [%s]",
               expected, actual);
-      logger.error("Response string: " + invokeResponse.getResponseString());
+      log.error("Response string: {}", invokeResponse.getResponseString());
       String errMsg = String.format("%s \n %s", err, invokeResponse.getErrorMessage());
-      logger.error("Log results: " + invokeResponse.getInvokeResult().getLogResult());
-      logger.error(err);
+      log.error("Log results: {}", invokeResponse.getInvokeResult().getLogResult());
+      log.error(err);
       return Pair.of(Boolean.FALSE, errMsg);
     }
     return Pair.of(Boolean.TRUE, "");
@@ -126,24 +128,22 @@ public class LambdaBlueGreenDeploymentStrategy
     inp.setWeightToMinorFunctionVersion(0.0);
     inp.setMajorFunctionVersion(inp.getLatestVersionQualifier());
     inp.setMinorFunctionVersion(null);
-    String cloudDriverUrl = props.getCloudDriverBaseUrl();
-    Map<String, Object> outputMap = new HashMap<String, Object>();
+
+    Map<String, Object> outputMap = new HashMap<>();
     outputMap.put("deployment:majorVersionDeployed", inp.getMajorFunctionVersion());
     outputMap.put("deployment:aliasDeployed", inp.getAliasName());
     outputMap.put("deployment:strategyUsed", "BlueGreenDeploymentStrategy");
-    LambdaCloudOperationOutput out = postToCloudDriver(inp, cloudDriverUrl, utils);
+
+    LambdaCloudOperationOutput out = updateAlias(inp);
     out.setOutputMap(outputMap);
-    LambdaDeploymentStrategyOutput deployOutput = LambdaDeploymentStrategyOutput.builder().build();
-    deployOutput.setSucceeded(true);
-    deployOutput.setOutput(out);
-    return deployOutput;
+
+    return LambdaDeploymentStrategyOutput.builder().succeeded(true).output(out).build();
   }
 
   @Override
   public LambdaBlueGreenStrategyInput setupInput(StageExecution stage) {
-    LambdaTrafficUpdateInput aliasInp = utils.getInput(stage, LambdaTrafficUpdateInput.class);
-    LambdaBlueGreenStrategyInput blueGreenInput =
-        utils.getInput(stage, LambdaBlueGreenStrategyInput.class);
+    LambdaTrafficUpdateInput aliasInp = stage.mapTo(LambdaTrafficUpdateInput.class);
+    LambdaBlueGreenStrategyInput blueGreenInput = stage.mapTo(LambdaBlueGreenStrategyInput.class);
     aliasInp.setAppName(stage.getExecution().getApplication());
 
     blueGreenInput.setCredentials(aliasInp.getAccount());
@@ -152,10 +152,9 @@ public class LambdaBlueGreenDeploymentStrategy
     blueGreenInput.setPayloadArtifact(aliasInp.getPayloadArtifact().getArtifact());
     blueGreenInput.setOutputArtifact(aliasInp.getOutputArtifact().getArtifact());
 
-    LambdaDefinition lf = null;
-    lf = utils.retrieveLambdaFromCache(stage, true);
+    LambdaDefinition lf = lambdaUtils.retrieveLambdaFromCache(stage);
 
-    String qual = utils.getCanonicalVersion(lf, "$LATEST", "", 1);
+    String qual = lambdaUtils.getCanonicalVersion(lf, "$LATEST", "", 1);
     blueGreenInput.setQualifier(qual);
     String latestVersion = this.getVersion(stage, "$LATEST", "");
     blueGreenInput.setLatestVersionQualifier(latestVersion);
@@ -164,19 +163,10 @@ public class LambdaBlueGreenDeploymentStrategy
   }
 
   private LambdaInvokeFunctionOutput invokeLambdaFunction(LambdaBlueGreenStrategyInput ldi) {
-    // ldi.setPayload(utils.getPipelinesArtifactContent(ldi.getPayloadArtifact()));
-    String cloudDriverUrl = props.getCloudDriverBaseUrl();
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_INVOKE_LAMBDA_FUNCTION_PATH;
-    String rawString = utils.asString(ldi);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for blueGreenDeployment: " + url);
-    LambdaInvokeFunctionOutput ldso = LambdaInvokeFunctionOutput.builder().url(url).build();
-    return ldso;
-  }
+    OperationContext context = objectMapper.convertValue(ldi, new TypeReference<>() {});
+    context.setOperationType("invokeLambdaFunction");
+    SubmitOperationResult result = katoService.submitOperation("aws", context);
 
-  @Override
-  public LambdaCloudDriverUtils getUtils() {
-    return utils;
+    return LambdaInvokeFunctionOutput.builder().url(result.getResourceUri()).build();
   }
 }

@@ -18,32 +18,31 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.time.Duration;
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaWaitToStabilizeTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaWaitToStabilizeTask.class);
 
   final String PENDING_STATE = "Pending";
   final String ACTIVE_STATE = "Active";
   final String FUNCTION_CREATING = "Creating";
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils utils;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaWaitToStabilizeTask(LambdaUtils utils) {
+    this.utils = utils;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaWaitToStabilizeTask...");
+    log.debug("Executing LambdaWaitToStabilizeTask...");
     return waitForStableState(stage);
   }
 
@@ -51,9 +50,9 @@ public class LambdaWaitToStabilizeTask implements LambdaStageBaseTask {
     LambdaDefinition lf;
     int counter = 0;
     while (true) {
-      lf = utils.retrieveLambdaFromCache(stage, true);
+      lf = utils.retrieveLambdaFromCache(stage);
       if (lf != null && lf.getState() != null) {
-        logger.info(
+        log.info(
             String.format(
                 "%s lambda state from the cache %s", lf.getFunctionName(), lf.getState()));
         if (lf.getState().equals(PENDING_STATE)
@@ -63,11 +62,11 @@ public class LambdaWaitToStabilizeTask implements LambdaStageBaseTask {
           continue;
         }
         if (lf.getState().equals(ACTIVE_STATE)) {
-          logger.info(lf.getFunctionName() + " is active");
+          log.info(lf.getFunctionName() + " is active");
           return taskComplete(stage);
         }
       } else {
-        logger.info(
+        log.info(
             "waiting for up to 10 minutes for it to show up in the cache... requires a full cache refresh cycle");
         utils.await(Duration.ofMinutes(1).toMillis());
         if (++counter > 10) break;

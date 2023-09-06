@@ -19,20 +19,20 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverTaskResults;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import javax.annotation.Nonnull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class LambdaDeleteVerificationTask implements LambdaStageBaseTask {
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils utils;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaDeleteVerificationTask(LambdaUtils utils) {
+    this.utils = utils;
+  }
 
   @Nonnull
   @Override

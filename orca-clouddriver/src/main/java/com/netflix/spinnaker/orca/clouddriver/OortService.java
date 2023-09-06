@@ -20,6 +20,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.clouddriver.model.Ami;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.ManifestCoordinates;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import java.util.List;
 import java.util.Map;
 import retrofit.client.Response;
@@ -131,6 +132,12 @@ public interface OortService {
       @Path("account") String account,
       @Path("region") String region,
       @Path("instanceId") String instanceId);
+
+  @GET("/functions")
+  List<LambdaDefinition> getFunction(
+      @Path("account") String account,
+      @Path("region") String region,
+      @Path("functionName") String functionName);
 
   @PUT("/artifacts/fetch/")
   Response fetchArtifact(@Body Artifact artifact);
