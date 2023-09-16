@@ -29,7 +29,6 @@ import spock.lang.Subject
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.google.common.net.HttpHeaders.LOCATION
 import static java.net.HttpURLConnection.*
-import static retrofit.Endpoints.newFixedEndpoint
 import static retrofit.RestAdapter.LogLevel.FULL
 
 class BakeryServiceSpec extends Specification {
