@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.bakery.api
 
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
@@ -49,7 +47,6 @@ class BakeryServiceSpec extends Specification {
 
   def mapper = OrcaObjectMapper.newInstance()
 
-  @BeforeAll
   def setup() {
     wireMockServer.start()
     bakeURI = wireMockServer.url(bakePath)
@@ -63,7 +60,6 @@ class BakeryServiceSpec extends Specification {
       .buildService(wireMockServer.url("/"))
   }
 
-  @AfterAll
   def cleanup() {
     wireMockServer.stop()
   }
