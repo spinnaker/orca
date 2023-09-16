@@ -31,7 +31,7 @@ import static retrofit.RestAdapter.LogLevel.FULL
 
 class BakeryServiceSpec extends Specification {
 
-  public WireMockServer wireMockServer = new WireMockServer()
+  static WireMockServer wireMockServer = new WireMockServer()
 
   @Subject BakeryService bakery
 
@@ -42,16 +42,18 @@ class BakeryServiceSpec extends Specification {
   private static final bakeId = "b-123456789"
   private static final statusId = "s-123456789"
 
-  String bakeURI
-  String statusURI
+  static String bakeURI
+  static String statusURI
 
   def mapper = OrcaObjectMapper.newInstance()
 
-  def setup() {
+  def setupSpec() {
     wireMockServer.start()
     bakeURI = wireMockServer.url(bakePath)
     statusURI = wireMockServer.url(statusPath)
+  }
 
+  def setup() {
     bakery = new BakeryConfiguration(
       retrofitClient: new OkClient(),
       retrofitLogLevel: FULL,
@@ -60,7 +62,7 @@ class BakeryServiceSpec extends Specification {
       .buildService(wireMockServer.url("/"))
   }
 
-  def cleanup() {
+  def cleanupSpec() {
     wireMockServer.stop()
   }
 
