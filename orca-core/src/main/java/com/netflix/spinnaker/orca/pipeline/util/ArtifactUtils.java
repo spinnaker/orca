@@ -231,8 +231,8 @@ public class ArtifactUtils {
   }
 
   private List<String> getExpectedArtifactIdsFromMap(Map<String, Object> trigger) {
-    return Optional.ofNullable((List<String>) trigger.get("expectedArtifactIds"))
-        .orElse(emptyList());
+    List<String> expectedArtifactIds = (List<String>) trigger.get("expectedArtifactIds");
+    return (expectedArtifactIds != null) ? expectedArtifactIds : emptyList();
   }
 
   public void resolveArtifacts(Map pipeline) {
