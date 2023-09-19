@@ -241,20 +241,13 @@ public class ArtifactUtils {
     Set<String> expectedArtifactIdsListConcat =
         new HashSet<>(getExpectedArtifactIdsFromMap(trigger));
 
-    // Due to 8df68b79cf1 getBoundArtifactForStage now does resolution which can
-    // potentially return an empty list or null back, which will throw an
-    // exception. Before this commit, when getBoundArtifactForStage was called,
-    // the method would just retrieve the bound artifact from the stage context,
-    // and return it as an ExpectedArtifact type instead of a map. "Resolution"
-    // would happen later in the DependentPipelineStarter class which handles
-    // the overall pipeline triggers case which we have now added here.
-    //
-    // Another case is when any custom trigger occurs, and it runs the
-    // orchestrate endpoint and if any pipeline stage uses
-    // getBoundArtifactForStage then this will throw an exception, instead of
-    // returning the bound artifact which will be later be added as an resolved
-    // artifact in the context. A good example of this is the
-    // CreateBakeManifestTask.
+    // Due to 8df68b79cf1 getBoundArtifactForStage now does resolution which
+    // can potentially return null artifact back, which will throw an exception
+    // for stages that expect a non-null value. Before this commit, when
+    // getBoundArtifactForStage was called, the method would just retrieve the
+    // bound artifact from the stage context, and return the appropriate
+    // artifact back. This change prevents tasks like CreateBakeManifestTask
+    // from working properly, if null is returned.
     //
     // reference: https://github.com/spinnaker/orca/pull/4397
     triggers.stream()
