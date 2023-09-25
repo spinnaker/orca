@@ -16,26 +16,23 @@
 
 package com.netflix.spinnaker.orca.bakery.api
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import org.junit.Rule
 import retrofit.RequestInterceptor
 import retrofit.RetrofitError
 import retrofit.client.OkClient
 import spock.lang.Specification
 import spock.lang.Subject
 import static com.github.tomakehurst.wiremock.client.WireMock.*
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static com.google.common.net.HttpHeaders.LOCATION
 import static java.net.HttpURLConnection.*
-import static retrofit.Endpoints.newFixedEndpoint
 import static retrofit.RestAdapter.LogLevel.FULL
 
 class BakeryServiceSpec extends Specification {
 
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort())
+  static WireMockServer wireMockServer = new WireMockServer()
 
   @Subject BakeryService bakery
 
@@ -46,21 +43,28 @@ class BakeryServiceSpec extends Specification {
   private static final bakeId = "b-123456789"
   private static final statusId = "s-123456789"
 
-  String bakeURI
-  String statusURI
+  static String bakeURI
+  static String statusURI
 
   def mapper = OrcaObjectMapper.newInstance()
 
-  def setup() {
-    bakeURI = wireMockRule.url(bakePath)
-    statusURI = wireMockRule.url(statusPath)
+  def setupSpec() {
+    wireMockServer.start()
+    bakeURI = wireMockServer.url(bakePath)
+    statusURI = wireMockServer.url(statusPath)
+  }
 
+  def setup() {
     bakery = new BakeryConfiguration(
       retrofitClient: new OkClient(),
       retrofitLogLevel: FULL,
       spinnakerRequestInterceptor: Mock(RequestInterceptor)
     )
-      .buildService(wireMockRule.url("/"))
+      .buildService(wireMockServer.url("/"))
+  }
+
+  def cleanupSpec() {
+    wireMockServer.stop()
   }
 
   def "can lookup a bake status"() {
@@ -102,6 +106,7 @@ class BakeryServiceSpec extends Specification {
         .willReturn(
         aResponse()
           .withStatus(HTTP_NOT_FOUND)
+          .withBody("{\"message\": \"error\"}")
       )
     )
 
@@ -109,7 +114,7 @@ class BakeryServiceSpec extends Specification {
     bakery.lookupStatus(region, statusId)
 
     then:
-    def ex = thrown(RetrofitError)
+    def ex = thrown(SpinnakerHttpException)
     ex.response.status == HTTP_NOT_FOUND
   }
 

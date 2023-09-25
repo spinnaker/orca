@@ -18,6 +18,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
@@ -34,7 +35,6 @@ import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import retrofit.RetrofitError;
 
 @Component
 @RequiredArgsConstructor
@@ -68,6 +68,8 @@ public class WaitForManifestStableTask
     List<Map<String, String>> stableManifests = context.getStableManifests();
     List<Map<String, String>> failedManifests = context.getFailedManifests();
     List warnings = context.getWarnings();
+    List events = context.getEvents();
+    boolean includeEvents = context.isIncludeEvents();
 
     boolean anyIncomplete = false;
     for (Map.Entry<String, List<String>> entry : deployedManifests.entrySet()) {
@@ -86,8 +88,8 @@ public class WaitForManifestStableTask
 
         Manifest manifest;
         try {
-          manifest = oortService.getManifest(account, location, name, false);
-        } catch (RetrofitError e) {
+          manifest = oortService.getManifest(account, location, name, includeEvents);
+        } catch (SpinnakerServerException e) {
           log.warn("Unable to read manifest {}", identifier, e);
           return TaskResult.builder(ExecutionStatus.RUNNING)
               .context(new HashMap<>())
@@ -124,6 +126,10 @@ public class WaitForManifestStableTask
         if (!manifest.getWarnings().isEmpty()) {
           warnings.addAll(manifest.getWarnings());
         }
+
+        if (!manifest.getEvents().isEmpty()) {
+          events.addAll(manifest.getEvents());
+        }
       }
     }
 
@@ -138,6 +144,9 @@ public class WaitForManifestStableTask
     }
     if (!warnings.isEmpty()) {
       builder.put("warnings", warnings);
+    }
+    if (!events.isEmpty()) {
+      builder.put("events", events);
     }
 
     Map<String, Object> newContext = builder.build();

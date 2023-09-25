@@ -123,6 +123,11 @@ public interface StageExecution {
 
   void setLastModified(@Nullable LastModifiedDetails lastModified);
 
+  @Nullable
+  Map<String, String> getAdditionalMetricTags();
+
+  void setAdditionalMetricTags(Map<String, String> additionalMetricTags);
+
   // ------------- InternalStageExecution?
   // A lot of these methods are used in a single place somewhere in Orca. I don't know why we
   // decided to put a bunch
@@ -177,6 +182,10 @@ public interface StageExecution {
   void setContinuePipelineOnFailure(boolean continuePipelineOnFailure);
 
   boolean isJoin();
+
+  boolean isManualJudgmentType();
+
+  boolean withPropagateAuthentication();
 
   void appendErrorMessage(String errorMessage);
 

@@ -79,6 +79,21 @@ class DependentPipelineStarter implements ApplicationContextAware {
           objectMapper.writeValueAsString(pipelineConfig))
     }
 
+    def expectedArtifactIds = pipelineConfig.get("triggers", []).findAll {
+      it.type == "pipeline" && it.pipeline == parentPipeline.pipelineConfigId
+    } collectMany {
+      it.expectedArtifactIds ?: []
+    }
+
+    // we are following a similar approach as triggers above
+    // expectedArtifacts can be used in triggers and stages
+    // for now we identified DeployManifestStage
+    // in ResolveDeploySourceManifestTask using ManifestEvaluator.getRequiredArtifacts
+    def requiredArtifactIds = pipelineConfig.get("stages", []).collectMany {
+      it.requiredArtifactIds ?: []
+    }
+    expectedArtifactIds.addAll(requiredArtifactIds)
+
     pipelineConfig.trigger = [
       type                 : "pipeline",
       user                 : authenticationDetails?.user ?: user ?: "[anonymous]",
@@ -86,7 +101,8 @@ class DependentPipelineStarter implements ApplicationContextAware {
       parentPipelineStageId: parentPipelineStageId,
       parameters           : [:],
       strategy             : suppliedParameters.strategy == true,
-      correlationId        : "${parentPipeline.id}_${parentPipelineStageId}_${pipelineConfig.id}_${parentPipeline.startTime}".toString()
+      correlationId        : "${parentPipeline.id}_${parentPipelineStageId}_${pipelineConfig.id}_${parentPipeline.startTime}".toString(),
+      expectedArtifactIds  : expectedArtifactIds.toSet().toList()
     ]
     /* correlationId is added so that two pipelines aren't triggered when a pipeline is canceled.
      * parentPipelineStageId is added so that a child pipeline (via pipeline stage)

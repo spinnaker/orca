@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation;
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
@@ -31,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import retrofit.RetrofitError;
 
 @Slf4j
 @Component
@@ -87,8 +87,8 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
         throw new RuntimeException(statusReason);
       }
       throw new RuntimeException("Unexpected stack status: " + stack.get("stackStatus"));
-    } catch (RetrofitError e) {
-      if (e.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
+    } catch (SpinnakerHttpException e) {
+      if (e.getResponseCode() == HttpStatus.NOT_FOUND.value()) {
         // The cache might not be up to date, try in the next iteration.
         return TaskResult.RUNNING;
       } else {
@@ -160,7 +160,8 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
       String status = getChangeSetInfo(stack, stage.getContext(), "status");
       String statusReason = getChangeSetInfo(stack, stage.getContext(), "statusReason");
       return status.equals(CloudFormationStates.FAILED.toString())
-          && statusReason.startsWith("The submitted information didn't contain changes");
+          && (statusReason.startsWith("The submitted information didn't contain changes")
+              || statusReason.equals("No updates are to be performed."));
     } else {
       return false;
     }

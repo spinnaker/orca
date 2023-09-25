@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.bakery.tasks
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.bakery.BakerySelector
@@ -30,6 +31,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.PackageType
 import retrofit.RetrofitError
 import retrofit.client.Response
+import retrofit.converter.JacksonConverter
 import retrofit.mime.TypedString
 import spock.lang.Shared
 import spock.lang.Specification
@@ -83,6 +85,44 @@ class CreateBakeTaskSpec extends Specification {
     cloudProviderType: "aws",
     baseOs           : "ubuntu",
     baseLabel        : "release"
+  ]
+
+  @Shared
+  def bakeConfigWithAzureManagedImage = [
+    region           : "us-west-1",
+    package          : "hodor",
+    user             : "bran",
+    cloudProviderType: "azure",
+    baseLabel        : "release",
+    osType           : "linux",
+    packageType      : "RPM",
+    managedImage     : "managed",
+    account          : "splat-azure"
+  ]
+
+  @Shared
+  def bakeConfigWithAzureDefaultImage = [
+    region           : "us-west-1",
+    package          : "hodor",
+    user             : "bran",
+    cloudProviderType: "azure",
+    baseOs           : "ubuntu",
+    baseLabel        : "release",
+    account          : "splat-azure"
+  ]
+
+  @Shared
+  def bakeConfigWithAzureCustomImage = [
+    region           : "us-west-1",
+    package          : "hodor",
+    user             : "bran",
+    cloudProviderType: "azure",
+    osType           : "windows",
+    sku              : "sky",
+    offer            : "offer",
+    publisher        : "pub",
+    baseLabel        : "release",
+    account          : "splat-azure"
   ]
 
   @Shared
@@ -207,9 +247,10 @@ class CreateBakeTaskSpec extends Specification {
   def error404 = RetrofitError.httpError(
     null,
     new Response("", HTTP_NOT_FOUND, "Not Found", [], new TypedString("{ \"messages\": [\"Error Message\"]}")),
-    null,
+    new JacksonConverter(),
     null
   )
+  def httpError404 = new SpinnakerHttpException(error404)
 
   def setup() {
     task.mapper = mapper
@@ -294,8 +335,8 @@ class CreateBakeTaskSpec extends Specification {
     task.execute(bakeStage)
 
     then:
-    1 * bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> {
-      throw error404
+    5 * bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> {
+      throw httpError404
     }
     IllegalStateException e = thrown()
     e.message == "Error Message"
@@ -984,6 +1025,139 @@ class CreateBakeTaskSpec extends Specification {
     bake.baseLabel == bakeConfigWithCloudProviderType.baseLabel
   }
 
+  def "Azure managedImage is propagated"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        type = "bake"
+        context = bakeConfigWithAzureManagedImage
+      }
+    }
+    def bake
+    def bakery = Mock(BakeryService) {
+      1 * createBake(*_) >> {
+        bake = it[1]
+        runningStatus
+      }
+    }
+
+    and:
+    def selectedBakeryService = Stub(SelectableService.SelectedService) {
+      getService() >> bakery
+      getConfig() >> [
+        extractBuildDetails: false,
+        allowMissingPackageInstallation: false,
+        roscoApisEnabled: false
+      ]
+    }
+
+    task.bakerySelector = Mock(BakerySelector) {
+      select(_) >> selectedBakeryService
+    }
+
+    when:
+    task.execute(pipeline.stages.first())
+
+    then:
+    bake.cloudProviderType == BakeRequest.CloudProviderType.azure
+    bake.user == bakeConfigWithAzureManagedImage.user
+    bake.packageName == bakeConfigWithAzureManagedImage.package
+    bake.baseLabel == bakeConfigWithAzureManagedImage.baseLabel
+    bake.custom_managed_image_name == bakeConfigWithAzureManagedImage.managedImage
+    bake.osType == bakeConfigWithAzureManagedImage.osType
+    bake.packageType == bakeConfigWithAzureManagedImage.packageType as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
+  }
+
+  def "Azure defaultImage is propagated"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        type = "bake"
+        context = bakeConfigWithAzureDefaultImage
+      }
+    }
+    def bake
+    def bakery = Mock(BakeryService) {
+      1 * createBake(*_) >> {
+        bake = it[1]
+        runningStatus
+      }
+    }
+
+    and:
+    def selectedBakeryService = Stub(SelectableService.SelectedService) {
+      getService() >> bakery
+      getConfig() >> [
+        extractBuildDetails: false,
+        allowMissingPackageInstallation: false,
+        roscoApisEnabled: false
+      ]
+    }
+
+    task.bakerySelector = Mock(BakerySelector) {
+      select(_) >> selectedBakeryService
+    }
+
+    when:
+    task.execute(pipeline.stages.first())
+
+    then:
+    bake.cloudProviderType == BakeRequest.CloudProviderType.azure
+    bake.user == bakeConfigWithAzureDefaultImage.user
+    bake.packageName == bakeConfigWithAzureDefaultImage.package
+    bake.baseOs == bakeConfigWithAzureDefaultImage.baseOs
+    bake.baseLabel == bakeConfigWithAzureDefaultImage.baseLabel
+    bake.packageType == PackageType.DEB as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
+  }
+
+  def "Azure customImage is propagated"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        type = "bake"
+        context = bakeConfigWithAzureCustomImage
+      }
+    }
+    def bake
+    def bakery = Mock(BakeryService) {
+      1 * createBake(*_) >> {
+        bake = it[1]
+        runningStatus
+      }
+    }
+
+    and:
+    def selectedBakeryService = Stub(SelectableService.SelectedService) {
+      getService() >> bakery
+      getConfig() >> [
+        extractBuildDetails: false,
+        allowMissingPackageInstallation: false,
+        roscoApisEnabled: false
+      ]
+    }
+
+    task.bakerySelector = Mock(BakerySelector) {
+      select(_) >> selectedBakeryService
+    }
+
+    when:
+    task.execute(pipeline.stages.first())
+
+    then:
+    bake.cloudProviderType == BakeRequest.CloudProviderType.azure
+    bake.user == bakeConfigWithAzureCustomImage.user
+    bake.packageName == bakeConfigWithAzureCustomImage.package
+    bake.baseLabel == bakeConfigWithAzureCustomImage.baseLabel
+    bake.sku == bakeConfigWithAzureCustomImage.sku
+    bake.offer == bakeConfigWithAzureCustomImage.offer
+    bake.publisher == bakeConfigWithAzureCustomImage.publisher
+    bake.osType == bakeConfigWithAzureCustomImage.osType
+    bake.packageType == PackageType.NUPKG as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
+  }
+
   @Unroll
   def "sets previouslyBaked flag to #previouslyBaked when status is #status.state"() {
     given:
@@ -1054,7 +1228,7 @@ class CreateBakeTaskSpec extends Specification {
   }
 
   @Unroll
-  def "sets rebake query parameter to #queryParameter when trigger is #trigger"() {
+  def "sets rebake query parameter to #queryParameter when trigger is #triggerConfig"() {
     given:
     def pipeline = pipeline {
         trigger = mapper.convertValue(triggerConfig, Trigger)

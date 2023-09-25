@@ -343,6 +343,23 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     this.lastModified = lastModified;
   }
 
+  /**
+   * Additional tags to be used with stage metrics. This is useful to add extra dimensions to the
+   * metrics recorded for built-in or custom stages.
+   */
+  private Map<String, String> additionalMetricTags;
+
+  @Nullable
+  @Override
+  public Map<String, String> getAdditionalMetricTags() {
+    return this.additionalMetricTags;
+  }
+
+  @Override
+  public void setAdditionalMetricTags(Map<String, String> additionalMetricTags) {
+    this.additionalMetricTags = additionalMetricTags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -784,6 +801,18 @@ public class StageExecutionImpl implements StageExecution, Serializable {
   @JsonIgnore
   public boolean isJoin() {
     return getRequisiteStageRefIds().size() > 1;
+  }
+
+  @JsonIgnore
+  @Override
+  public boolean isManualJudgmentType() {
+    return Objects.equals(this.type, "manualJudgment");
+  }
+
+  @Override
+  public boolean withPropagateAuthentication() {
+    return context.get("propagateAuthenticationContext") != null
+        && Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
   }
 
   @Nonnull
