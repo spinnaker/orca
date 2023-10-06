@@ -261,7 +261,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
   }
 
-  def "trying to retrieve an invalid #type.simpleName id throws an exception"() {
+  def "trying to retrieve an invalid #type id throws an exception"() {
     when:
     repository().retrieve(type, "invalid")
 
@@ -272,7 +272,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     type << ExecutionType.values()
   }
 
-  def "trying to delete a non-existent #type.simpleName id does not throw an exception"() {
+  def "trying to delete a non-existent #type id does not throw an exception"() {
     when:
     repository().delete(type, "invalid")
 
@@ -548,6 +548,28 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
     where:
     status << ExecutionStatus.values()
+  }
+
+  def "should return task ref for currently running pipeline by correlation id"() {
+    given:
+    def execution = pipeline {
+      trigger = new DefaultTrigger("manual", "covfefe")
+    }
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
+
+    when:
+    def result = repository().retrievePipelineForCorrelationId('covfefe')
+
+    then:
+    result.id == execution.id
+
+    when:
+    repository().updateStatus(execution.type, execution.id, SUCCEEDED)
+    repository().retrievePipelineForCorrelationId('covfefe')
+
+    then:
+    thrown(ExecutionNotFoundException)
   }
 
   def "should return task ref for currently running orchestration by correlation id"() {

@@ -36,6 +36,8 @@ dependencies {
   implementation("org.liquibase:liquibase-core")
   implementation("com.zaxxer:HikariCP")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+  implementation("net.javacrumbs.shedlock:shedlock-spring:4.44.0")
+  implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:4.44.0")
 
   testImplementation(project(":orca-core-tck"))
   testImplementation(project(":orca-test-groovy"))
@@ -51,12 +53,8 @@ dependencies {
   testRuntimeOnly("mysql:mysql-connector-java")
   testRuntimeOnly("org.postgresql:postgresql")
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
 }
 
 test {
-  useJUnitPlatform {
-    includeEngines "junit-vintage", "junit-jupiter"
-  }
+  useJUnitPlatform()
 }

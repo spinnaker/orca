@@ -54,20 +54,20 @@ dependencies {
   implementation("com.jayway.jsonpath:json-path:2.2.0")
   implementation("org.yaml:snakeyaml")
   implementation("org.codehaus.groovy:groovy")
+  implementation("net.javacrumbs.shedlock:shedlock-spring:4.44.0")
+  implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:4.44.0")
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 
   testImplementation(project(":orca-test"))
   testImplementation(project(":orca-test-groovy"))
-  testImplementation("com.github.tomakehurst:wiremock:2.15.0")
+  testImplementation("com.github.tomakehurst:wiremock:2.17.0")
   testImplementation("org.junit.jupiter:junit-jupiter-api")
-  testImplementation("org.junit.platform:junit-platform-runner")
   testImplementation("org.assertj:assertj-core")
   testImplementation("org.mockito:mockito-core")
   testImplementation("org.mockito:mockito-junit-jupiter")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
-  testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 }
