@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.front50.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.front50.pipeline.MonitorPipelineStage
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.WaitStage
@@ -308,5 +309,25 @@ class MonitorPipelineTaskSpec extends Specification {
     behavior                                                    || expectedStatus
     MonitorPipelineStage.MonitorBehavior.FailFast               || ExecutionStatus.TERMINAL
     MonitorPipelineStage.MonitorBehavior.WaitForAllToComplete   || ExecutionStatus.RUNNING
+  }
+
+  def "terminal execution status when no execution Ids were provided"() {
+    def stageNoExecutionId = stage {
+      type = providedType
+      name = "my_stage"
+      status = ExecutionStatus.RUNNING
+    }
+    stageNoExecutionId.context.put("executionIds", [])
+
+    when:
+    def result = task.execute(stageNoExecutionId)
+
+    then:
+    result.status == expectedStatus
+
+    where:
+    providedType                              || expectedStatus
+    "anyOtherType"                            || ExecutionStatus.TERMINAL
+    MonitorPipelineStage.PIPELINE_CONFIG_TYPE || ExecutionStatus.TERMINAL
   }
 }
