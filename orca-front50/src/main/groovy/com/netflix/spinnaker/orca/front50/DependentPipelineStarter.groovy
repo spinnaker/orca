@@ -85,12 +85,24 @@ class DependentPipelineStarter implements ApplicationContextAware {
       it.expectedArtifactIds ?: []
     }
 
-    // we are following a similar approach as triggers above
+    // following a similar approach as triggers above
     // expectedArtifacts can be used in triggers and stages
-    // for now we identified DeployManifestStage
-    // in ResolveDeploySourceManifestTask using ManifestEvaluator.getRequiredArtifacts
-    def requiredArtifactIds = pipelineConfig.get("stages", []).collectMany {
-      it.requiredArtifactIds ?: []
+    def requiredArtifactIds = pipelineConfig.get("stages", []).collectMany { stage ->
+      def artifactIds = []
+
+      //DeployManifestStage in ResolveDeploySourceManifestTask using ManifestEvaluator.getManifestArtifact
+      artifactIds += stage.manifestArtifactId ?: []
+
+      // DeployManifestStage in ResolveDeploySourceManifestTask using ManifestEvaluator.getRequiredArtifacts
+      artifactIds += stage.requiredArtifactIds ?: []
+
+      // BakeManifestStage in CreateBakeManifestTask using BakeManifestContext for Kustomize
+      artifactIds += stage.inputArtifact?.id ?: []
+
+      // BakeManifestStage in CreateBakeManifestTask using BakeManifestContext for Helm
+      artifactIds += stage.inputArtifacts?.collect { it.id } ?: []
+
+      return artifactIds
     }
     expectedArtifactIds.addAll(requiredArtifactIds)
 
