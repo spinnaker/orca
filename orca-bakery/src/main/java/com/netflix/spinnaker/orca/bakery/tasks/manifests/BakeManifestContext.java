@@ -33,6 +33,8 @@ public class BakeManifestContext {
   private final Boolean evaluateOverrideExpressions;
   private final String templateRenderer;
   private final String outputName;
+  private final String apiVersions;
+  private final String kubeVersion;
   private final String namespace;
   private final Boolean rawOverrides;
   @Nullable private final String kustomizeFilePath;
@@ -48,6 +50,8 @@ public class BakeManifestContext {
       @JsonProperty("evaluateOverrideExpressions") Boolean evaluateOverrideExpressions,
       @JsonProperty("templateRenderer") String templateRenderer,
       @JsonProperty("outputName") String outputName,
+      @Nullable @JsonProperty("apiVersions") String apiVersions,
+      @Nullable @JsonProperty("kubeVersion") String kubeVersion,
       @JsonProperty("namespace") String namespace,
       @Nullable @JsonProperty("inputArtifact") CreateBakeManifestTask.InputArtifact inputArtifact,
       @Nullable @JsonProperty("kustomizeFilePath") String kustomizeFilePath,
@@ -63,6 +67,8 @@ public class BakeManifestContext {
     this.evaluateOverrideExpressions = evaluateOverrideExpressions;
     this.templateRenderer = templateRenderer;
     this.outputName = outputName;
+    this.apiVersions = apiVersions;
+    this.kubeVersion = kubeVersion;
     this.namespace = namespace;
     this.kustomizeFilePath = kustomizeFilePath;
     this.helmChartFilePath = helmChartFilePath;
