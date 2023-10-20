@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline.util;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.lang.String.format;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -84,6 +83,10 @@ public final class ArtifactResolver {
     return new ArtifactResolver(currentArtifacts, ImmutableList::of, requireUniqueMatches);
   }
 
+  public ResolveResult resolveExpectedArtifacts(Iterable<ExpectedArtifact> expectedArtifacts) {
+    return resolveExpectedArtifacts(expectedArtifacts, true);
+  }
+
   /**
    * Resolves the input expected artifacts, returning the result of the resolution as a {@link
    * ResolveResult}.
@@ -111,7 +114,8 @@ public final class ArtifactResolver {
    * @param expectedArtifacts The expected artifacts to resolve
    * @return The result of the artifact resolution
    */
-  public ResolveResult resolveExpectedArtifacts(Iterable<ExpectedArtifact> expectedArtifacts) {
+  public ResolveResult resolveExpectedArtifacts(
+      Iterable<ExpectedArtifact> expectedArtifacts, boolean throwsExceptionIfNotFound) {
     // We keep track of resolved artifacts in an ImmutableSet.Builder so that duplicates are not
     // added (in the case that an artifact matches more than one expected artifact). An ImmutableSet
     // iterates in the order elements were added (including via the builder), so calling asList()
@@ -120,17 +124,22 @@ public final class ArtifactResolver {
     ImmutableList.Builder<ExpectedArtifact> boundExpectedArtifacts = ImmutableList.builder();
 
     for (ExpectedArtifact expectedArtifact : expectedArtifacts) {
-      Artifact resolved =
-          resolveSingleArtifact(expectedArtifact)
-              .orElseThrow(
-                  () ->
-                      new InvalidRequestException(
-                          format(
-                              "Unmatched expected artifact %s could not be resolved.",
-                              expectedArtifact)));
-      resolvedArtifacts.add(resolved);
-      boundExpectedArtifacts.add(expectedArtifact.toBuilder().boundArtifact(resolved).build());
+      Optional<Artifact> resolvedOptional = resolveSingleArtifact(expectedArtifact);
+
+      if (resolvedOptional.isEmpty() && throwsExceptionIfNotFound) {
+        throw new InvalidRequestException(
+            String.format(
+                "Unmatched expected artifact %s could not be resolved.", expectedArtifact));
+      }
+
+      if (resolvedOptional.isPresent()) {
+        Artifact resolvedArtifact = resolvedOptional.get();
+        resolvedArtifacts.add(resolvedArtifact);
+        boundExpectedArtifacts.add(
+            expectedArtifact.toBuilder().boundArtifact(resolvedArtifact).build());
+      }
     }
+
     return new ResolveResult(resolvedArtifacts.build().asList(), boundExpectedArtifacts.build());
   }
 

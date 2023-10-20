@@ -52,7 +52,6 @@ import java.util.stream.Stream;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,31 +143,7 @@ public class ArtifactUtils {
         contextParameterProcessor.process(
             boundArtifactMap, contextParameterProcessor.buildExecutionContext(stage), true);
 
-    Artifact evaluatedArtifact =
-        objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
-    return getBoundInlineArtifact(evaluatedArtifact, stage.getExecution())
-        .orElse(evaluatedArtifact);
-  }
-
-  private Optional<Artifact> getBoundInlineArtifact(
-      @Nullable Artifact artifact, PipelineExecution execution) {
-    if (ObjectUtils.anyNull(
-        artifact, execution.getTrigger(), execution.getTrigger().getArtifacts())) {
-      return Optional.empty();
-    }
-    try {
-      ExpectedArtifact expectedArtifact =
-          ExpectedArtifact.builder().matchArtifact(artifact).build();
-      return ArtifactResolver.getInstance(execution.getTrigger().getArtifacts(), true)
-          .resolveExpectedArtifacts(List.of(expectedArtifact))
-          .getResolvedExpectedArtifacts()
-          .stream()
-          .findFirst()
-          .flatMap(this::getBoundArtifact);
-    } catch (InvalidRequestException e) {
-      log.debug("Could not match inline artifact with trigger bound artifacts", e);
-      return Optional.empty();
-    }
+    return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
   }
 
   public @Nullable Artifact getBoundArtifactForId(StageExecution stage, @Nullable String id) {
@@ -228,6 +203,107 @@ public class ArtifactUtils {
     return getExecutionForPipelineId(pipelineId, criteria)
         .map(e -> getAllArtifacts(e, it -> !stageRef.equals(it.getRefId())))
         .orElse(Collections.emptyList());
+  }
+
+  /**
+   * The intention is to throw an exception if all the expected artifacts are not provided in the
+   * trigger <br>
+   * For now this is only for triggers of type pipeline
+   *
+   * @param pipeline
+   * @throws InvalidRequestException if the trigger does not provide all the expected artifacts
+   */
+  public void validateArtifactConstraintsFromTrigger(Map<String, Object> pipeline) {
+    Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
+    List<?> expectedArtifactIds =
+        (List<?>) trigger.getOrDefault("expectedArtifactIds", emptyList());
+
+    ImmutableList<ExpectedArtifact> expectedArtifacts =
+        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
+            .filter(
+                artifact ->
+                    expectedArtifactIds.contains(artifact.getId())
+                        || artifact.isUseDefaultArtifact()
+                        || artifact.isUsePriorArtifact())
+            .collect(toImmutableList());
+
+    ImmutableSet<Artifact> receivedArtifacts = concatReceivedArtifacts(pipeline, trigger);
+
+    ArtifactResolver.getInstance(
+            receivedArtifacts, () -> getPriorArtifacts(pipeline), /* requireUniqueMatches= */ true)
+        .resolveExpectedArtifacts(expectedArtifacts);
+  }
+
+  private ImmutableSet<Artifact> concatReceivedArtifacts(
+      Map<String, Object> pipeline, Map<String, Object> trigger) {
+    return Stream.concat(
+            Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
+                .map(Collection::stream)
+                .orElse(Stream.empty()),
+            Optional.ofNullable((List<?>) trigger.get("artifacts"))
+                .map(Collection::stream)
+                .orElse(Stream.empty()))
+        .map(it -> objectMapper.convertValue(it, Artifact.class))
+        .collect(toImmutableSet());
+  }
+
+  /**
+   * This will only resolve the expected artifacts that match received artifacts. <br>
+   * If the expected artifact is not present in received artifacts, it is not resolved. <br>
+   * This resolves as many artifacts as possible, because there is no standard way to include all
+   * the stages using expected artifacts. <br>
+   * The best scenario is: the trigger pipeline provides all the expected artifacts. <br>
+   * The worst scenario is: the pipeline will fail until the stage using the expected artifact is
+   * executed. <br>
+   * For now this is only for triggers of type pipeline
+   *
+   * @param pipeline
+   */
+  public void resolveArtifactsFromTrigger(Map pipeline) {
+    Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
+    ImmutableList<ExpectedArtifact> expectedArtifacts =
+        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
+            .collect(toImmutableList());
+
+    ImmutableSet<Artifact> receivedArtifacts = concatReceivedArtifacts(pipeline, trigger);
+
+    ArtifactResolver.ResolveResult resolveResult =
+        ArtifactResolver.getInstance(
+                receivedArtifacts,
+                () -> getPriorArtifacts(pipeline),
+                /* requireUniqueMatches= */ true)
+            .resolveExpectedArtifacts(expectedArtifacts, false);
+
+    ImmutableSet<Artifact> allArtifacts =
+        ImmutableSet.<Artifact>builder()
+            .addAll(receivedArtifacts)
+            .addAll(resolveResult.getResolvedArtifacts())
+            .build();
+
+    try {
+      trigger.put(
+          "artifacts",
+          objectMapper.readValue(objectMapper.writeValueAsString(allArtifacts), List.class));
+      trigger.put(
+          "expectedArtifacts",
+          objectMapper.readValue(
+              objectMapper.writeValueAsString(resolveResult.getResolvedExpectedArtifacts()),
+              List.class));
+      trigger.put(
+          "resolvedExpectedArtifacts",
+          objectMapper.readValue(
+              objectMapper.writeValueAsString(resolveResult.getResolvedExpectedArtifacts()),
+              List.class)); // Add the actual expectedArtifacts we included in the ids.
+    } catch (IOException e) {
+      throw new ArtifactResolutionException(
+          "Failed to store artifacts in trigger: " + e.getMessage(), e);
+    }
   }
 
   private List<String> getExpectedArtifactIdsFromMap(Map<String, Object> trigger) {
