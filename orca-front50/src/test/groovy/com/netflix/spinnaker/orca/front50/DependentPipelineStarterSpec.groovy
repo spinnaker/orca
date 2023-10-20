@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.front50
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.artifacts.ArtifactTypes
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
@@ -575,6 +576,81 @@ class DependentPipelineStarterSpec extends Specification {
     result.trigger.artifacts.findAll { it.name == "gcr.io/project/image" }.version.containsAll(["42", "1337"])
   }
 
+  def "should find expected artifacts when pipeline has requiredArtifactIds and triggered by pipeline stage"() {
+    given:
+    def requiredArtifactId = "docker-artifact-id"
+    def expectedImage = Artifact.builder().type("docker/image").name("docker.io/org/image").build()
+    ArrayList<ExpectedArtifact> expectedArtifacts = [
+        ExpectedArtifact.builder().id(requiredArtifactId).matchArtifact(expectedImage).build()
+    ]
+
+    def triggeredPipelineConfig = [
+        name             : "triggered-by-stage",
+        id               : "triggered-id",
+        stages           : [
+            [
+                name               : "Deploy (Manifest)",
+                type               : "deployManifest",
+                requiredArtifactIds: [requiredArtifactId]
+            ]
+        ],
+        expectedArtifacts: expectedArtifacts,
+        triggers         : [],
+    ]
+
+    Artifact testArtifact = Artifact.builder().type("docker/image").name("docker.io/org/image").version("alpine").build()
+
+    def parentPipeline = pipeline {
+      name = "parent-pipeline"
+      authentication = new PipelineExecution.AuthenticationDetails("username", "account1")
+      pipelineConfigId = "f837d603-bcc8-41c4-8ebc-bf0b23f59108"
+      stage {
+        id = "stage1"
+        refId = "1"
+        outputs = [artifacts: [testArtifact]]
+      }
+    }
+
+    def executionLauncher = Mock(ExecutionLauncher)
+    def applicationContext = new StaticApplicationContext()
+    applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
+    dependentPipelineStarter = new DependentPipelineStarter(
+        applicationContext,
+        mapper,
+        new ContextParameterProcessor(),
+        Optional.empty(),
+        Optional.of(artifactUtils),
+        new NoopRegistry()
+    )
+
+    and:
+    executionLauncher.start(*_) >> { _, p ->
+      return pipeline {
+        name = p.name
+        id = p.name
+        trigger = mapper.convertValue(p.trigger, Trigger)
+      }
+    }
+    artifactUtils.getArtifactsForPipelineId(*_) >> {
+      return new ArrayList<Artifact>();
+    }
+
+    when:
+    def result = dependentPipelineStarter.trigger(
+        triggeredPipelineConfig,
+        null,
+        parentPipeline,
+        [:],
+        "stage1",
+        buildAuthenticatedUser("username", [])
+    )
+
+    then:
+    result.trigger.artifacts.size() == 1
+    result.trigger.artifacts*.name.contains(testArtifact.name)
+    result.trigger.artifacts.findAll { it.name == "docker.io/org/image" }.version.containsAll(["alpine"])
+  }
+
   def "should resolve expressions in trigger"() {
     given:
     def triggeredPipelineConfig = [name: "triggered", id: "triggered", parameterConfig: [[name: 'a', default: '${2 == 2}']]]
@@ -848,7 +924,7 @@ class DependentPipelineStarterSpec extends Specification {
                                          matchArtifact: [
                                            kind: "base64",
                                            name: "baked-manifest",
-                                           type: "embedded/base64"
+                                           type: ArtifactTypes.EMBEDDED_BASE64.getMimeType()
                                          ],
                                          useDefaultArtifact: false
                                        ]],

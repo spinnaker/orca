@@ -22,7 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jakewharton.retrofit.Ok3Client;
 import com.netflix.spinnaker.config.DefaultServiceEndpoint;
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider;
+import com.netflix.spinnaker.kork.artifacts.artifactstore.ArtifactStoreConfiguration;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.kork.web.selector.DefaultServiceSelector;
 import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import com.netflix.spinnaker.kork.web.selector.ServiceSelector;
@@ -47,7 +49,7 @@ import retrofit.RestAdapter;
 import retrofit.converter.JacksonConverter;
 
 @Configuration
-@Import(RetrofitConfiguration.class)
+@Import({RetrofitConfiguration.class, ArtifactStoreConfiguration.class})
 @ComponentScan({
   "com.netflix.spinnaker.orca.clouddriver",
   "com.netflix.spinnaker.orca.kato.pipeline",
@@ -207,6 +209,7 @@ public class CloudDriverConfiguration {
           .setLogLevel(retrofitLogLevel)
           .setLog(new RetrofitSlf4jLog(type))
           .setConverter(new JacksonConverter(objectMapper))
+          .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
           .build()
           .create(type);
     }

@@ -18,9 +18,7 @@ apply from: "$rootDir/gradle/groovy.gradle"
 apply from: "$rootDir/gradle/kotlin.gradle"
 
 test {
-  useJUnitPlatform {
-    includeEngines "junit-vintage", "junit-jupiter"
-  }
+  useJUnitPlatform()
 }
 
 dependencies {
@@ -32,6 +30,7 @@ dependencies {
   implementation(project(":orca-bakery"))
   implementation(project(":orca-deploymentmonitor"))
   implementation("io.spinnaker.kork:kork-moniker")
+  implementation("io.spinnaker.kork:kork-retrofit")
   implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
   implementation("io.kubernetes:client-java")
   implementation("com.amazonaws:aws-java-sdk-lambda")
@@ -53,9 +52,7 @@ dependencies {
   testImplementation("com.github.tomakehurst:wiremock:2.15.0")
   testImplementation("org.springframework:spring-test")
   testImplementation("org.junit.jupiter:junit-jupiter-api")
-  testImplementation("org.junit.platform:junit-platform-runner")
   testImplementation("org.assertj:assertj-core")
-  testImplementation("org.mockito:mockito-core:2.25.0")
   testImplementation("org.mockito:mockito-junit-jupiter")
   testImplementation("io.spinnaker.fiat:fiat-core:$fiatVersion")
   testImplementation("dev.minutest:minutest")
@@ -66,8 +63,7 @@ dependencies {
   testCompileOnly("org.projectlombok:lombok")
   testAnnotationProcessor("org.projectlombok:lombok")
 
-  testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
-  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
 sourceSets {
