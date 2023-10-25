@@ -36,16 +36,13 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -215,39 +212,13 @@ public class ArtifactUtils {
    */
   public void validateArtifactConstraintsFromTrigger(Map<String, Object> pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
-    List<?> expectedArtifactIds =
-        (List<?>) trigger.getOrDefault("expectedArtifactIds", emptyList());
-
-    ImmutableList<ExpectedArtifact> expectedArtifacts =
-        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
-            .map(Collection::stream)
-            .orElse(Stream.empty())
-            .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
-            .filter(
-                artifact ->
-                    expectedArtifactIds.contains(artifact.getId())
-                        || artifact.isUseDefaultArtifact()
-                        || artifact.isUsePriorArtifact())
-            .collect(toImmutableList());
+    ImmutableList<ExpectedArtifact> expectedArtifacts = filterExpectedArtifacts(pipeline, trigger);
 
     ImmutableSet<Artifact> receivedArtifacts = concatReceivedArtifacts(pipeline, trigger);
 
     ArtifactResolver.getInstance(
             receivedArtifacts, () -> getPriorArtifacts(pipeline), /* requireUniqueMatches= */ true)
         .resolveExpectedArtifacts(expectedArtifacts);
-  }
-
-  private ImmutableSet<Artifact> concatReceivedArtifacts(
-      Map<String, Object> pipeline, Map<String, Object> trigger) {
-    return Stream.concat(
-            Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
-                .map(Collection::stream)
-                .orElse(Stream.empty()),
-            Optional.ofNullable((List<?>) trigger.get("artifacts"))
-                .map(Collection::stream)
-                .orElse(Stream.empty()))
-        .map(it -> objectMapper.convertValue(it, Artifact.class))
-        .collect(toImmutableSet());
   }
 
   /**
@@ -280,86 +251,14 @@ public class ArtifactUtils {
                 /* requireUniqueMatches= */ true)
             .resolveExpectedArtifacts(expectedArtifacts, false);
 
-    ImmutableSet<Artifact> allArtifacts =
-        ImmutableSet.<Artifact>builder()
-            .addAll(receivedArtifacts)
-            .addAll(resolveResult.getResolvedArtifacts())
-            .build();
-
-    try {
-      trigger.put(
-          "artifacts",
-          objectMapper.readValue(objectMapper.writeValueAsString(allArtifacts), List.class));
-      trigger.put(
-          "expectedArtifacts",
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(resolveResult.getResolvedExpectedArtifacts()),
-              List.class));
-      trigger.put(
-          "resolvedExpectedArtifacts",
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(resolveResult.getResolvedExpectedArtifacts()),
-              List.class)); // Add the actual expectedArtifacts we included in the ids.
-    } catch (IOException e) {
-      throw new ArtifactResolutionException(
-          "Failed to store artifacts in trigger: " + e.getMessage(), e);
-    }
-  }
-
-  private List<String> getExpectedArtifactIdsFromMap(Map<String, Object> trigger) {
-    List<String> expectedArtifactIds = (List<String>) trigger.get("expectedArtifactIds");
-    return (expectedArtifactIds != null) ? expectedArtifactIds : emptyList();
+    saveArtifactsInTrigger(trigger, receivedArtifacts, resolveResult);
   }
 
   public void resolveArtifacts(Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
-    List<?> triggers = Optional.ofNullable((List<?>) pipeline.get("triggers")).orElse(emptyList());
-    Set<String> expectedArtifactIdsListConcat =
-        new HashSet<>(getExpectedArtifactIdsFromMap(trigger));
+    ImmutableList<ExpectedArtifact> expectedArtifacts = filterExpectedArtifacts(pipeline, trigger);
 
-    // Due to 8df68b79cf1 getBoundArtifactForStage now does resolution which
-    // can potentially return null artifact back, which will throw an exception
-    // for stages that expect a non-null value. Before this commit, when
-    // getBoundArtifactForStage was called, the method would just retrieve the
-    // bound artifact from the stage context, and return the appropriate
-    // artifact back. This change prevents tasks like CreateBakeManifestTask
-    // from working properly, if null is returned.
-    //
-    // reference: https://github.com/spinnaker/orca/pull/4397
-    triggers.stream()
-        .map(it -> (Map<String, Object>) it)
-        // This filter prevents multiple triggers from adding its
-        // expectedArtifactIds unless it is the expected trigger type that was
-        // triggered
-        //
-        // reference: https://github.com/spinnaker/orca/pull/4322
-        .filter(it -> trigger.getOrDefault("type", "").equals(it.get("type")))
-        .map(this::getExpectedArtifactIdsFromMap)
-        .forEach(expectedArtifactIdsListConcat::addAll);
-
-    final List<String> expectedArtifactIds = new ArrayList<>(expectedArtifactIdsListConcat);
-    ImmutableList<ExpectedArtifact> expectedArtifacts =
-        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
-            .map(Collection::stream)
-            .orElse(Stream.empty())
-            .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
-            .filter(
-                artifact ->
-                    expectedArtifactIds.contains(artifact.getId())
-                        || artifact.isUseDefaultArtifact()
-                        || artifact.isUsePriorArtifact())
-            .collect(toImmutableList());
-
-    ImmutableSet<Artifact> receivedArtifacts =
-        Stream.concat(
-                Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
-                    .map(Collection::stream)
-                    .orElse(Stream.empty()),
-                Optional.ofNullable((List<?>) trigger.get("artifacts"))
-                    .map(Collection::stream)
-                    .orElse(Stream.empty()))
-            .map(it -> objectMapper.convertValue(it, Artifact.class))
-            .collect(toImmutableSet());
+    ImmutableSet<Artifact> receivedArtifacts = concatReceivedArtifacts(pipeline, trigger);
 
     ArtifactResolver.ResolveResult resolveResult =
         ArtifactResolver.getInstance(
@@ -368,6 +267,43 @@ public class ArtifactUtils {
                 /* requireUniqueMatches= */ true)
             .resolveExpectedArtifacts(expectedArtifacts);
 
+    saveArtifactsInTrigger(trigger, receivedArtifacts, resolveResult);
+  }
+
+  private ImmutableList<ExpectedArtifact> filterExpectedArtifacts(
+      Map pipeline, Map<String, Object> trigger) {
+    List<?> expectedArtifactIds =
+        (List<?>) trigger.getOrDefault("expectedArtifactIds", emptyList());
+
+    return Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
+        .map(Collection::stream)
+        .orElse(Stream.empty())
+        .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
+        .filter(
+            artifact ->
+                expectedArtifactIds.contains(artifact.getId())
+                    || artifact.isUseDefaultArtifact()
+                    || artifact.isUsePriorArtifact())
+        .collect(toImmutableList());
+  }
+
+  private ImmutableSet<Artifact> concatReceivedArtifacts(
+      Map<String, Object> pipeline, Map<String, Object> trigger) {
+    return Stream.concat(
+            Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
+                .map(Collection::stream)
+                .orElse(Stream.empty()),
+            Optional.ofNullable((List<?>) trigger.get("artifacts"))
+                .map(Collection::stream)
+                .orElse(Stream.empty()))
+        .map(it -> objectMapper.convertValue(it, Artifact.class))
+        .collect(toImmutableSet());
+  }
+
+  private void saveArtifactsInTrigger(
+      Map<String, Object> trigger,
+      ImmutableSet<Artifact> receivedArtifacts,
+      ArtifactResolver.ResolveResult resolveResult) {
     ImmutableSet<Artifact> allArtifacts =
         ImmutableSet.<Artifact>builder()
             .addAll(receivedArtifacts)
