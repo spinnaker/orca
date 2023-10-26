@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.bakery.tasks
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
@@ -65,9 +66,9 @@ class MonitorBakeTask implements OverridableTimeoutRetryableTask {
       }
 
       TaskResult.builder(mapStatus(newStatus)).context([status: newStatus]).build()
-    } catch (RetrofitError e) {
+    } catch (SpinnakerHttpException e) {
       log.error("Monitor Error {}", e.getMessage())
-      if (e.response?.status == 404) {
+      if (e.responseCode == 404) {
         return TaskResult.ofStatus(ExecutionStatus.RUNNING)
       }
       throw e
