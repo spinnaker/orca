@@ -22,6 +22,7 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.artifacts.ArtifactTypes
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.ExecutionPreprocessor
@@ -576,6 +577,89 @@ class DependentPipelineStarterSpec extends Specification {
     result.trigger.artifacts*.name.contains(testArtifact2.name)
     result.trigger.artifacts*.name.contains(testArtifact3.name)
     result.trigger.artifacts.findAll { it.name == "gcr.io/project/image" }.version.containsAll(["42", "1337"])
+  }
+
+  def "should fail pipeline when parent pipeline does not provide expected artifacts"() {
+    given:
+    def artifact = Artifact.builder().type("embedded/base64").name("baked-manifest").build()
+    def expectedArtifactId = "826018cd-e278-4493-a6a5-4b0a0166a843"
+    def expectedArtifact = ExpectedArtifact
+        .builder()
+        .id(expectedArtifactId)
+        .matchArtifact(artifact)
+        .build()
+
+    def parentPipeline = pipeline {
+      name = "my-parent-pipeline"
+      authentication = new PipelineExecution.AuthenticationDetails("username", "account1")
+      pipelineConfigId = "fe0b3537-3101-46a1-8e08-ab57cf65a207"
+      stage {
+        id = "my-stage-1"
+        refId = "1"
+        // not passing artifacts
+      }
+    }
+
+    def triggeredPipelineConfig = [
+        name             : "triggered-by-stage",
+        id               : "triggered-id",
+        stages           : [
+            [
+                name: "My Stage",
+                type: "bakeManifest",
+            ]
+        ],
+        expectedArtifacts: [
+            expectedArtifact
+        ],
+        triggers         : [
+            [
+                type               : "pipeline",
+                pipeline           : parentPipeline.pipelineConfigId,
+                expectedArtifactIds: [expectedArtifactId]
+            ]
+        ],
+    ]
+
+    def executionLauncher = Mock(ExecutionLauncher)
+    def applicationContext = new StaticApplicationContext()
+    applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
+    dependentPipelineStarter = new DependentPipelineStarter(
+        applicationContext,
+        mapper,
+        new ContextParameterProcessor(),
+        Optional.empty(),
+        Optional.of(artifactUtils),
+        new NoopRegistry()
+    )
+
+    and:
+    def error
+    executionLauncher.fail(_, _, _) >> { PIPELINE, processedPipeline, artifactError ->
+      error = artifactError
+      return pipeline {
+        name = processedPipeline.name
+        id = processedPipeline.name
+        trigger = mapper.convertValue(processedPipeline.trigger, Trigger)
+      }
+    }
+
+    when:
+    def result = dependentPipelineStarter.trigger(
+        triggeredPipelineConfig,
+        null,
+        parentPipeline,
+        [:],
+        "my-stage-1",
+        buildAuthenticatedUser("username", [])
+    )
+
+    then:
+    1 * artifactUtils.resolveArtifacts(_)
+    error != null
+    error instanceof InvalidRequestException
+    error.message == "Unmatched expected artifact " + expectedArtifact + " could not be resolved."
+    result.trigger.artifacts.size() == 0
   }
 
   def "should resolve expressions in trigger"() {
