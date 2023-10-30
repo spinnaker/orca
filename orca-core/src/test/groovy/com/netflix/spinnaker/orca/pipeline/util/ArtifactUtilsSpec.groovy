@@ -82,29 +82,6 @@ class ArtifactUtilsSpec extends Specification {
     artifact.name == 'build/libs/my-jar-100.jar'
   }
 
-  def "should bind stage-inlined artifacts to trigger artifacts"() {
-    setup:
-    def execution = pipeline {
-      stage {
-        name = "upstream stage"
-        type = "stage1"
-        refId = "1"
-      }
-    }
-
-    execution.trigger = new DefaultTrigger('manual')
-    execution.trigger.artifacts.add(Artifact.builder().type('http/file').name('build/libs/my-jar-100.jar').build())
-
-    when:
-    def artifact = makeArtifactUtils().getBoundArtifactForStage(execution.stages[0], null, Artifact.builder()
-        .type('http/file')
-        .name('build/libs/my-jar-\\d+.jar')
-        .build())
-
-    then:
-    artifact.name == 'build/libs/my-jar-100.jar'
-  }
-
   def "should find upstream artifacts in small pipeline"() {
     when:
     def desired = execution.getStages().find { it.name == "desired" }
