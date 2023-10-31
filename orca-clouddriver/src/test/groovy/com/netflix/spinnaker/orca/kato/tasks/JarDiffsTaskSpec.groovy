@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
@@ -26,7 +27,10 @@ import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.Library
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.RetrofitError
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import org.springframework.http.HttpMethod
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Shared
@@ -41,6 +45,11 @@ class JarDiffsTaskSpec extends Specification {
 
   InstanceService instanceService = Mock(InstanceService)
 
+  Headers headers = Headers.of("Content-type", "application/json")
+  Map<String, String> tags = new HashMap<>()
+  Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
+
+
   @Shared
   PipelineExecutionImpl pipeline = PipelineExecutionImpl.newPipeline("orca")
 
@@ -48,6 +57,7 @@ class JarDiffsTaskSpec extends Specification {
     GroovyMock(OortHelper, global: true)
     task.objectMapper = new ObjectMapper()
     task.comparableLooseVersion = new DefaultComparableLooseVersion()
+    tags.put("testKey", "testValue")
   }
 
   Map deployContext = ["availabilityZones" : ["us-west-2": ["us-west-2a"]],"kato.tasks" : [[resultObjects : [[ancestorServerGroupNameByRegion: ["us-west-2" : "myapp-v000"]],[serverGroupNameByRegion : ["us-west-2" : "myapp-v002"]]]]]]
@@ -103,7 +113,7 @@ class JarDiffsTaskSpec extends Specification {
     Response jarsResponse = new Response('http://foo.com', 200, 'OK', [], new TypedString(sourceJarsResponse))
 
     when:
-    1 * instanceService.getJars() >> {throw new RetrofitError(null, null, null, null, null, null, null)}
+    1 * instanceService.getJars() >> {throw new SpinnakerServerException(request)}
     1 * instanceService.getJars() >> jarsResponse
     def result = task.getJarList([foo: [hostName : "bar"], foo2: [hostName : "bar2"]])
 
@@ -121,7 +131,7 @@ class JarDiffsTaskSpec extends Specification {
     5 * task.createInstanceService("http://bar:8077") >> instanceService
 
     when:
-    5 * instanceService.getJars() >> {throw new RetrofitError(null, null, null, null, null, null, null)}
+    5 * instanceService.getJars() >> {throw new SpinnakerServerException(request)}
     def result = task.getJarList((1..5).collectEntries { ["${it}": [hostName : "bar"]] })
 
     then:
@@ -138,7 +148,7 @@ class JarDiffsTaskSpec extends Specification {
     Response jarsResponse = new Response('http://foo.com', 200, 'OK', [], new TypedString(sourceJarsResponse))
 
     when:
-    1 * instanceService.getJars() >> {throw new RetrofitError(null, null, null, null, null, null, null)}
+    1 * instanceService.getJars() >> {throw new SpinnakerServerException(request)}
     1 * instanceService.getJars() >> jarsResponse
     def result = task.getJarList([foo: [hostName : "bar"], foo2: [hostName : "bar2"], foo3: [hostName : "bar3"]])
 
@@ -215,7 +225,7 @@ class JarDiffsTaskSpec extends Specification {
     task.oortHelper = oortHelper
     1 * oortHelper.getInstancesForCluster(stage.context, "myapp-v000", false) >> sourceExpectedInstances
     1 * oortHelper.getInstancesForCluster(stage.context, "myapp-v002", false) >> targetExpectedInstances
-    1 * instanceService.getJars() >> {throw new RetrofitError(null, null, null, null, null, null, null)}
+    1 * instanceService.getJars() >> {throw new SpinnakerServerException(request)}
     1 * instanceService.getJars() >> targetResponse
 
     TaskResult result = task.execute(stage)

@@ -16,12 +16,16 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.ModelUtils
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.RetrofitError
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import org.springframework.http.HttpMethod
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -52,6 +56,12 @@ class InstanceHealthCheckTaskSpec extends Specification {
 
     instances.size() * task.createInstanceService(_) >> instanceService
 
+    Headers headers = Headers.of("Content-type", "application/json")
+    Map<String, String> tags = new HashMap<>()
+    tags.put("testKey", "testValue")
+    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
+
+
     when:
     def result = task.execute(stage)
 
@@ -60,7 +70,7 @@ class InstanceHealthCheckTaskSpec extends Specification {
       if (responseCode.get(i) == 200) {
         1 * instanceService.healthCheck("healthCheck") >> responses.get(i)
       } else {
-        1 * instanceService.healthCheck("healthCheck") >> { throw new RetrofitError(null, null, null, null, null, null, null) }
+        1 * instanceService.healthCheck("healthCheck") >> { throw new SpinnakerServerException(request) }
       }
     }
 

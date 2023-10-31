@@ -16,6 +16,13 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import org.springframework.http.HttpMethod
+
 import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -23,7 +30,6 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
@@ -168,6 +174,12 @@ class TriggerQuipTaskSpec extends Specification {
     stage.context.instances = instances
     instances.size() * task.createInstanceService(_) >> instanceService
 
+    Headers headers = Headers.of("Content-type", "application/json")
+    Map<String, String> tags = new HashMap<>()
+    tags.put("testKey", "testValue")
+    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
+
+
     when:
     TaskResult result = task.execute(stage)
 
@@ -176,7 +188,7 @@ class TriggerQuipTaskSpec extends Specification {
       // need to do this since I can't stick exceptions on the data table
       if (it) {
         1 * instanceService.patchInstance(app, patchVersion, "") >> {
-          throw new RetrofitError(null, null, null, null, null, null, null)
+          throw new SpinnakerServerException(request)
         }
       } else {
         1 * instanceService.patchInstance(app, patchVersion, "") >> instanceResponse
@@ -245,12 +257,18 @@ class TriggerQuipTaskSpec extends Specification {
     task.instanceVersionSleep = 1
     task.createInstanceService(_) >> instanceService
 
+    Headers headers = Headers.of("Content-type", "application/json")
+    Map<String, String> tags = new HashMap<>()
+    tags.put("testKey", "testValue")
+    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
+
+
     when:
     TaskResult result = task.execute(stage)
 
     then:
     2 * instanceService.getCurrentVersion(app) >> {
-      throw RetrofitError.networkError('http://foo', new IOException('failed'))
+      throw new SpinnakerNetworkException(new RuntimeException(), request)
     } >> mkResponse([version: patchVersion])
 
     result.context.skippedInstances.keySet() == ["i-1234"] as Set

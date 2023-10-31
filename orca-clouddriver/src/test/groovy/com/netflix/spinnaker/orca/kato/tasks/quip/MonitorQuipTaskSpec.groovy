@@ -17,11 +17,15 @@
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.RetrofitError
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.Request
+import org.springframework.http.HttpMethod
 import retrofit.client.Client
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -118,6 +122,10 @@ class MonitorQuipTaskSpec extends Specification {
     def stage = new StageExecutionImpl(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
+    Headers headers = Headers.of("Content-type", "application/json")
+    Map<String, String> tags = new HashMap<>()
+    tags.put("testKey", "testValue")
+    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
 
     task.createInstanceService(_) >> instanceService
 
@@ -126,7 +134,7 @@ class MonitorQuipTaskSpec extends Specification {
 
     then:
     taskIds.eachWithIndex { def entry, int i ->
-      instanceService.listTask(entry.value) >> { throw new RetrofitError(null, null, null, null, null, null, null)}
+      instanceService.listTask(entry.value) >> { throw new SpinnakerServerException(request)}
     }
     result.status == ExecutionStatus.RUNNING
 
