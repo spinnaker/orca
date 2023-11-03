@@ -18,10 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.Request
-import org.springframework.http.HttpMethod
+import retrofit.RetrofitError
 
 import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -174,12 +171,6 @@ class TriggerQuipTaskSpec extends Specification {
     stage.context.instances = instances
     instances.size() * task.createInstanceService(_) >> instanceService
 
-    Headers headers = Headers.of("Content-type", "application/json")
-    Map<String, String> tags = new HashMap<>()
-    tags.put("testKey", "testValue")
-    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
-
-
     when:
     TaskResult result = task.execute(stage)
 
@@ -188,7 +179,7 @@ class TriggerQuipTaskSpec extends Specification {
       // need to do this since I can't stick exceptions on the data table
       if (it) {
         1 * instanceService.patchInstance(app, patchVersion, "") >> {
-          throw new SpinnakerServerException(request)
+          throw new SpinnakerServerException(new RetrofitError(null, null, null, null, null, null, null))
         }
       } else {
         1 * instanceService.patchInstance(app, patchVersion, "") >> instanceResponse
@@ -257,18 +248,12 @@ class TriggerQuipTaskSpec extends Specification {
     task.instanceVersionSleep = 1
     task.createInstanceService(_) >> instanceService
 
-    Headers headers = Headers.of("Content-type", "application/json")
-    Map<String, String> tags = new HashMap<>()
-    tags.put("testKey", "testValue")
-    Request request = new Request(HttpUrl.parse("http://foo.com"), HttpMethod.GET.name(), headers, null, tags as Map<Class<?>, ? extends Object>)
-
-
     when:
     TaskResult result = task.execute(stage)
 
     then:
     2 * instanceService.getCurrentVersion(app) >> {
-      throw new SpinnakerNetworkException(new RuntimeException(), request)
+      throw new SpinnakerNetworkException(new RetrofitError(null, null, null, null, null, null, null))
     } >> mkResponse([version: patchVersion])
 
     result.context.skippedInstances.keySet() == ["i-1234"] as Set
