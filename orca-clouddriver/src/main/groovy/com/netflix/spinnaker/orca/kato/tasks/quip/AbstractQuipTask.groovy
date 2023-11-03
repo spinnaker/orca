@@ -31,7 +31,7 @@ abstract class AbstractQuipTask implements Task {
       .setEndpoint(address)
       .setClient(new OkClient(new OkHttpClient(retryOnConnectionFailure: false)))
       .setLogLevel(BASIC)
-        .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
+      .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
       .build()
     return restAdapter.create(InstanceService.class)
   }

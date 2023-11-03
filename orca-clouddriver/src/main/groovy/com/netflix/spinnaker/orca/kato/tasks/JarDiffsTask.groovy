@@ -122,7 +122,7 @@ class JarDiffsTask implements DiffTask {
     RestAdapter restAdapter = new RestAdapter.Builder()
       .setEndpoint(address)
       .setClient(new OkClient(okHttpClient))
-        .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
+      .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
       .build()
 
     return restAdapter.create(InstanceService.class)
