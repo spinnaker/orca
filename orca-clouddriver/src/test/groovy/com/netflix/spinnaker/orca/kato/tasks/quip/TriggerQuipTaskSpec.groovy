@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
-import retrofit.RetrofitError
 
 import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -27,6 +26,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
