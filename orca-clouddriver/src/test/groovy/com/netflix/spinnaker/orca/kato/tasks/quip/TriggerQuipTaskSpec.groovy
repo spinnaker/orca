@@ -253,7 +253,7 @@ class TriggerQuipTaskSpec extends Specification {
 
     then:
     2 * instanceService.getCurrentVersion(app) >> {
-      throw new SpinnakerNetworkException(new RetrofitError(null, null, null, null, null, null, null))
+      throw new SpinnakerNetworkException(RetrofitError.networkError('http://foo', new IOException('failed')))
     } >> mkResponse([version: patchVersion])
 
     result.context.skippedInstances.keySet() == ["i-1234"] as Set
