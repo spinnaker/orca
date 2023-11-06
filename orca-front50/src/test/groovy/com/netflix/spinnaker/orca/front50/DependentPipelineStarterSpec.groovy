@@ -354,7 +354,8 @@ class DependentPipelineStarterSpec extends Specification {
     result.trigger.artifacts.size() == 2
     result.trigger.artifacts*.name.contains(testArtifact1.name)
     result.trigger.artifacts*.name.contains(testArtifact2.name)
-    result.trigger.resolvedExpectedArtifacts.size() == 0
+    result.trigger.resolvedExpectedArtifacts.size() == 1
+    result.trigger.resolvedExpectedArtifacts.get(0).id.equals("id1")
   }
 
   def "should find expected artifacts from pipeline trigger"() {
@@ -495,7 +496,8 @@ class DependentPipelineStarterSpec extends Specification {
     result.trigger.artifacts.size() == 2
     result.trigger.artifacts*.name.contains(testArtifact1.name)
     result.trigger.artifacts*.name.contains(testArtifact2.name)
-    result.trigger.resolvedExpectedArtifacts.size() == 0
+    result.trigger.resolvedExpectedArtifacts.size() == 1
+    result.trigger.resolvedExpectedArtifacts.get(0).id.equals("id1")
   }
 
   def "should find expected artifacts from parent pipeline trigger if triggered by pipeline stage"() {
