@@ -492,8 +492,6 @@ class ArtifactUtilsSpec extends Specification {
     initialArtifacts == finalArtifacts
   }
 
-<<<<<<< HEAD
-=======
   def "resolve expected artifact using default artifact"() {
     given:
     def matchArtifact = Artifact
@@ -608,7 +606,6 @@ class ArtifactUtilsSpec extends Specification {
     resolvedArtifacts*.getBoundArtifact() == [priorArtifact]
   }
 
->>>>>>> 645059dc2 (fix(artifacts): Automated triggers with artifact constraints are broken if you have 2 or more of the same type (#4579))
   private List<Artifact> extractTriggerArtifacts(Map<String, Object> trigger) {
     return objectMapper.convertValue(trigger.artifacts, new TypeReference<List<Artifact>>(){});
   }
