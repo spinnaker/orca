@@ -81,29 +81,6 @@ class ArtifactUtilsSpec extends Specification {
     artifact.name == 'build/libs/my-jar-100.jar'
   }
 
-  def "should bind stage-inlined artifacts to trigger artifacts"() {
-    setup:
-    def execution = pipeline {
-      stage {
-        name = "upstream stage"
-        type = "stage1"
-        refId = "1"
-      }
-    }
-
-    execution.trigger = new DefaultTrigger('manual')
-    execution.trigger.artifacts.add(Artifact.builder().type('http/file').name('build/libs/my-jar-100.jar').build())
-
-    when:
-    def artifact = makeArtifactUtils().getBoundArtifactForStage(execution.stages[0], null, Artifact.builder()
-        .type('http/file')
-        .name('build/libs/my-jar-\\d+.jar')
-        .build())
-
-    then:
-    artifact.name == 'build/libs/my-jar-100.jar'
-  }
-
   def "should find upstream artifacts in small pipeline"() {
     when:
     def desired = execution.getStages().find { it.name == "desired" }
@@ -513,6 +490,120 @@ class ArtifactUtilsSpec extends Specification {
 
     then:
     initialArtifacts == finalArtifacts
+  }
+
+  def "resolve expected artifact using default artifact"() {
+    given:
+    def matchArtifact = Artifact
+        .builder()
+        .name("my-artifact")
+        .artifactAccount("embedded-artifact")
+        .type("embedded/base64")
+        .build()
+    def defaultArtifact = Artifact
+        .builder()
+        .name("default-artifact")
+        .artifactAccount("embedded-artifact")
+        .type("embedded/base64")
+        .reference("bmVtZXNpcwo=")
+        .build()
+    def expectedArtifact = ExpectedArtifact
+        .builder()
+        .matchArtifact(matchArtifact)
+        .defaultArtifact(defaultArtifact)
+        .useDefaultArtifact(true)
+        .build()
+
+    def pipeline = [
+        id               : "01HE3GXEJX05143Y7JSGTRRB40",
+        trigger          : [
+            type: "manual",
+            // not passing artifacts in trigger
+        ],
+        expectedArtifacts: [expectedArtifact],
+    ]
+    def artifactUtils = makeArtifactUtils()
+
+    when:
+    artifactUtils.resolveArtifacts(pipeline)
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+        pipeline.trigger.resolvedExpectedArtifacts,
+        new TypeReference<List<ExpectedArtifact>>() {}
+    )
+
+    then:
+    pipeline.trigger.artifacts.size() == 1
+    pipeline.trigger.expectedArtifacts.size() == 1
+    pipeline.trigger.resolvedExpectedArtifacts.size() == 1
+    resolvedArtifacts*.getBoundArtifact() == [defaultArtifact]
+  }
+
+  def "resolve expected artifact using prior artifact"() {
+    given:
+    def artifactName = "my-artifact-name"
+    def priorArtifact = Artifact
+        .builder()
+        .name(artifactName)
+        .artifactAccount("embedded-artifact")
+        .type("embedded/base64")
+        .reference("b3NvcmlvCg==")
+        .build()
+
+    def pipelineId = "01HE3GXEJX05143Y7JSGTRRB41"
+    def priorExecution = pipeline {
+      id:
+      pipelineId
+      status:
+      ExecutionStatus.SUCCEEDED
+      stage {
+        refId = "1"
+        outputs.artifacts = [priorArtifact]
+      }
+    }
+
+    ExecutionRepository.ExecutionCriteria criteria = new ExecutionRepository.ExecutionCriteria();
+    criteria.setPageSize(1);
+    criteria.setSortType(ExecutionRepository.ExecutionComparator.START_TIME_OR_ID);
+
+    def executionRepositoryMock = Mock(ExecutionRepository) {
+      retrievePipelinesForPipelineConfigId(pipelineId, criteria) >> Observable.just(priorExecution)
+    }
+
+    def matchArtifact = Artifact
+        .builder()
+        .name(artifactName)
+        .artifactAccount("embedded-artifact")
+        .type("embedded/base64")
+        .build()
+    def expectedArtifact = ExpectedArtifact
+        .builder()
+        .matchArtifact(matchArtifact)
+        .usePriorArtifact(true)
+        .build()
+
+    def pipeline = [
+        id               : pipelineId,
+        trigger          : [
+            type: "manual",
+            // not passing artifacts in trigger
+        ],
+        expectedArtifacts: [expectedArtifact],
+    ]
+
+    def artifactUtils = makeArtifactUtilsWithStub(executionRepositoryMock)
+
+    when:
+    artifactUtils.resolveArtifacts(pipeline)
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+        pipeline.trigger.resolvedExpectedArtifacts,
+        new TypeReference<List<ExpectedArtifact>>() {}
+    )
+
+    then:
+    pipeline.trigger.artifacts.size() == 1
+    pipeline.trigger.expectedArtifacts.size() == 1
+    pipeline.trigger.resolvedExpectedArtifacts.size() == 1
+    resolvedArtifacts*.getBoundArtifact() == [priorArtifact]
   }
 
   private List<Artifact> extractTriggerArtifacts(Map<String, Object> trigger) {
