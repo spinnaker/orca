@@ -193,7 +193,7 @@ public class EvaluateDeploymentHealthTaskTest {
 
     String expectedMessage =
         String.format(
-            "HTTP Error encountered while talking to %s(%s)->%s%s, status: 200 (OK)\nheaders: \nresponse body: }",
+            "HTTP Error encountered while talking to %s(%s)->%s%s, <NO RESPONSE>",
             MONITOR_NAME, MONITOR_ID, wireMock.baseUrl(), URL_PATH);
     List<String> warnings = memoryAppender.search(expectedMessage, Level.WARN);
     assertThat(warnings).hasSize(1);
@@ -239,9 +239,6 @@ public class EvaluateDeploymentHealthTaskTest {
     HttpHeaders multipleHttpHeaders =
         new HttpHeaders(httpHeader1, httpHeader2, httpHeader3, httpHeader4);
 
-    // Currently body and expectedBody are always the same.  With the move to
-    // SpinnakerRetrofitErrorHandler they won't be.  Live with the duplication
-    // now so it's easier to see the diffs then.
     return Stream.of(
         arguments(
             named("json object", httpStatus), HttpHeaders.noHeaders(), jsonObject, jsonObject),
@@ -250,15 +247,15 @@ public class EvaluateDeploymentHealthTaskTest {
             HttpHeaders.noHeaders(),
             emptyJsonObject,
             emptyJsonObject),
-        arguments(named("json array", httpStatus), HttpHeaders.noHeaders(), jsonArray, jsonArray),
-        arguments(named("non json", httpStatus), httpHeaders, nonJsonResponse, nonJsonResponse),
+        arguments(named("json array", httpStatus), HttpHeaders.noHeaders(), jsonArray, ""),
+        arguments(named("non json", httpStatus), httpHeaders, nonJsonResponse, ""),
         arguments(
             named("multiple headers", httpStatus), multipleHttpHeaders, jsonObject, jsonObject));
   }
 
   /**
    * Verify that the warning that MonitoredDeployBaseTask.execute logs when executeInternal throws a
-   * RetrofitError is as expected.
+   * SpinnakerServerException is as expected.
    *
    * @param stubId the wiremock stub id
    * @param httpStatus the http status to expect
