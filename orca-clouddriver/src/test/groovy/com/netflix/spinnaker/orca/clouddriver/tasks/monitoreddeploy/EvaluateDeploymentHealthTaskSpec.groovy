@@ -19,6 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortServiceSpec
@@ -46,11 +48,11 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
   PipelineExecutionImpl pipe = pipeline {
   }
 
-  def "should retry retrofit errors"() {
+  def "should retry on SpinnakerServerException"() {
     given:
     def monitorServiceStub = Stub(DeploymentMonitorService) {
       evaluateHealth(_) >> {
-        throw RetrofitError.networkError("url", new IOException())
+        throw new SpinnakerServerException(RetrofitError.networkError("url", new IOException()))
       }
     }
 
@@ -203,8 +205,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     false              | null             || ExecutionStatus.FAILED_CONTINUE
   }
 
-  def "should return status as RUNNING when Retrofit http error is thrown"() {
-
+  def "should return status as RUNNING when SpinnakerHttpException is thrown"() {
     def converter = new JacksonConverter(new ObjectMapper())
 
     Response response =
@@ -224,7 +225,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     given:
     def monitorServiceStub = Stub(DeploymentMonitorService) {
       evaluateHealth(_) >> {
-        throw RetrofitError.httpError("https://foo.com/deployment/evaluateHealth", response, converter, null)
+        throw new SpinnakerHttpException(RetrofitError.httpError("https://foo.com/deployment/evaluateHealth", response, converter, null))
       }
     }
 
