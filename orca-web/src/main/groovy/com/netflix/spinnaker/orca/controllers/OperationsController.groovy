@@ -343,7 +343,7 @@ class OperationsController {
       if (trigger.propertyFile) {
         try {
           trigger.properties = buildService.getPropertyFile(
-            trigger.buildNumber as Integer,
+            trigger.buildNumber as String,
             trigger.propertyFile as String,
             trigger.master as String,
             trigger.job as String

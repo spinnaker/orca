@@ -53,7 +53,7 @@ class MonitorJenkinsJobTask implements OverridableTimeoutRetryableTask {
       return TaskResult.ofStatus(ExecutionStatus.TERMINAL)
     }
 
-    def buildNumber = (int) stage.context.buildNumber
+    def buildNumber = stage.context.buildNumber
     try {
       Map<String, Object> build = buildService.getBuild(buildNumber, master, job)
       Map outputs = [:]

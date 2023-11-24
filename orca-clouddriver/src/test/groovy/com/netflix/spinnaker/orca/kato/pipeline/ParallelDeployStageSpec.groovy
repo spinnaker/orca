@@ -30,7 +30,7 @@ class ParallelDeployStageSpec extends Specification {
   def "should build contexts corresponding to cluster configuration(s)"() {
     given:
     def pipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null)
+      trigger = new JenkinsTrigger("master", "job", "1", null)
       application = "orca"
     }
     def bakeStage = new StageExecutionImpl(pipeline, "deploy", "Deploy!", stageContext)
@@ -57,7 +57,7 @@ class ParallelDeployStageSpec extends Specification {
   def "pipeline strategy should #data.scenario"() {
     given:
     def parentPipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null)
+      trigger = new JenkinsTrigger("master", "job", "1", null)
       application = "orca"
       stage {
         name = "parent stage"

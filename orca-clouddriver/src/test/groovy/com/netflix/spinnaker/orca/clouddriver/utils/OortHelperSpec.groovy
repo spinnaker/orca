@@ -35,14 +35,14 @@ class OortHelperSpec extends Specification {
         "region": "us-west-2",
         "asg": { "createdTime": 12344, "suspendedProcesses": [{"processName": "AddToLoadBalancer"}] },
         "image": { "imageId": "ami-012", "name": "ami-012" },
-        "buildInfo": { "job": "foo-build", "buildNumber": 1 },
+        "buildInfo": { "job": "foo-build", "buildNumber": "1" },
         "instances": [ { "id": 1 }, { "id": 2 } ]
       },{
         "name": "myapp-v003",
         "region":"us-west-2",
         "asg": { "createdTime": 23456,  "suspendedProcesses": [] },
         "image": { "imageId": "ami-234", "name": "ami-234" },
-        "buildInfo": { "job": "foo-build", "buildNumber": 1 },
+        "buildInfo": { "job": "foo-build", "buildNumber": "1" },
         "instances": [ { "id": 1 } ]
       }]
     }
@@ -67,7 +67,7 @@ class OortHelperSpec extends Specification {
         "region": "us-west-2",
         "asg": { "createdTime": 12344, "suspendedProcesses": [{"processName": "AddToLoadBalancer"}] },
         "image": { "imageId": "ami-012", "name": "ami-012" },
-        "buildInfo": { "job": "foo-build", "buildNumber": 1 },
+        "buildInfo": { "job": "foo-build", "buildNumber": "1" },
         "instances": [ { "instanceId": 1, "health" : [{"healthCheckUrl" : "http://foo/bar"}, {"status": "UP"}] }, { "instanceId": 2, "health" : [{"healthCheckUrl" : "http://foo2/bar2"}, {"status": "UP"}] } ]
       }]
     }
@@ -92,7 +92,7 @@ class OortHelperSpec extends Specification {
         "region": "us-west-2",
         "asg": { "createdTime": 12344, "suspendedProcesses": [{"processName": "AddToLoadBalancer"}] },
         "image": { "imageId": "ami-012", "name": "ami-012" },
-        "buildInfo": { "job": "foo-build", "buildNumber": 1 },
+        "buildInfo": { "job": "foo-build", "buildNumber": "1" },
         "instances": [ { "instanceId": 1, "health" : [{"healthCheckUrl" : "http://foo/bar"}, {"status": "DOWN"}] },
                        { "instanceId": 2, "health" : [{"healthCheckUrl" : "http://foo2/bar2"}, {"status": "UP"}] },
                        { "instanceId": 3, "health" : [{"healthCheckUrl" : "http://foo2/bar3"}] },

@@ -318,7 +318,7 @@ class TriggerSpec extends Specification {
     with(trigger) {
       master == "spinnaker"
       job == "SPINNAKER-package-orca"
-      buildNumber == 1509
+      buildNumber == '1509'
       propertyFile == ""
       buildInfo.url == "https://spinnaker.builds.test.netflix.net/job/SPINNAKER-package-orca/1509/"
       buildInfo.artifacts.size() == 2
@@ -340,7 +340,7 @@ class TriggerSpec extends Specification {
     "building": false,
     "fullDisplayName": "SPINNAKER-package-orca #1509",
     "name": "SPINNAKER-package-orca",
-    "number": 1509,
+    "number": "1509",
     "duration": 124941,
     "timestamp": "1513230062314",
     "result": "SUCCESS",
@@ -365,7 +365,7 @@ class TriggerSpec extends Specification {
   },
   "type": "jenkins",
   "job": "SPINNAKER-package-orca",
-  "buildNumber": 1509,
+  "buildNumber": "1509",
   "parameters": {},
   "user": "[anonymous]",
   "enabled": true,
@@ -550,7 +550,7 @@ class TriggerSpec extends Specification {
     with(trigger) {
       master == "travis-schibsted"
       job == "spt-infrastructure/metrics/master"
-      buildNumber == 245
+      buildNumber == '245'
       propertyFile == null
       buildInfo.url == "https://travis.schibsted.io/spt-infrastructure/metrics/builds/2685930"
     }
@@ -574,7 +574,7 @@ class TriggerSpec extends Specification {
     "building": false,
     "duration": 72,
     "name": "spt-infrastructure/metrics",
-    "number": 245,
+    "number": "245",
     "result": "SUCCESS",
     "scm": [
       {
@@ -590,7 +590,7 @@ class TriggerSpec extends Specification {
     "timestamp": "1516881731000",
     "url": "https://travis.schibsted.io/spt-infrastructure/metrics/builds/2685930"
   },
-  "buildNumber": 245,
+  "buildNumber": "245",
   "constraints": null,
   "cronExpression": null,
   "digest": null,
@@ -627,10 +627,10 @@ class TriggerSpec extends Specification {
     with(trigger) {
       master == "staging"
       job == "mytest"
-      buildNumber == 123
+      buildNumber == "123"
       propertyFile == null
       buildInfo.name == "test-build"
-      buildInfo.number == 123
+      buildInfo.number == "123"
       buildInfo.url == "https://testurl"
     }
 
@@ -638,10 +638,10 @@ class TriggerSpec extends Specification {
     triggerJson = """{
   "buildInfo": {
     "name": "test-build",
-    "number": 123,
+    "number": "123",
     "url": "https://testurl"
   },
-  "buildNumber": 123,
+  "buildNumber": "123",
   "job": "mytest",
   "master": "staging",
   "propertyFile": null,

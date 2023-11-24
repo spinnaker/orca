@@ -38,7 +38,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   @Unroll
   def "should return #taskStatus if job is #jobState"() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: '4'])
 
     and:
     task.buildService = Stub(BuildService) {
@@ -61,7 +61,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   @Unroll
   def "should ignore job state when build is running"() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: '4'])
 
     and:
     task.buildService = Stub(BuildService) {
@@ -83,7 +83,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   @Unroll
   def "should ignore job state when build is building"() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: '4'])
 
     and:
     task.buildService = Stub(BuildService) {
@@ -104,7 +104,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
 
   def "should return running status if igor call 404/500/503's"() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: '4'])
 
     and:
     def exception = Stub(RetrofitError) {
@@ -138,7 +138,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   def "marks 'unstable' results as successful if explicitly configured to do so"() {
     given:
     def stage = new StageExecutionImpl(pipeline, "jenkins",
-      [master: "builds", job: "orca", buildNumber: 4, markUnstableAsSuccessful: markUnstableAsSuccessful])
+      [master: "builds", job: "orca", buildNumber: '4', markUnstableAsSuccessful: markUnstableAsSuccessful])
 
 
     and:
@@ -159,7 +159,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   @Unroll
   def 'provides breadcrumb stage error message in failure states'() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: '4'])
 
     and:
     task.buildService = Stub(BuildService) {

@@ -2,7 +2,7 @@ package com.netflix.spinnaker.orca.pipeline.model
 
 abstract class BuildInfo<A>(
   open val name: String?,
-  open val number: Int,
+  open val number: String?,
   open val url: String?,
   open val result: String?,
   open val artifacts: List<A>? = emptyList(),

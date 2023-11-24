@@ -304,7 +304,7 @@ class ContextParameterProcessorSpec extends Specification {
   @Unroll
   def "correctly compute scmInfo attribute"() {
     given:
-    context.trigger.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [], scm)
+    context.trigger.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [], scm)
 
     def source = ['branch': '${scmInfo.branch}']
 
@@ -323,7 +323,7 @@ class ContextParameterProcessorSpec extends Specification {
     [new SourceControl("", "buildBranch", ""), new SourceControl("", "jenkinsBranch", "")] | 'buildBranch'
 
     context = [
-      trigger: new JenkinsTrigger("master", "job", 1, null)
+      trigger: new JenkinsTrigger("master", "job", '1', null)
     ]
   }
 
@@ -401,7 +401,7 @@ class ContextParameterProcessorSpec extends Specification {
           type = "wait"
           status = SUCCEEDED
         }
-        trigger = new JenkinsTrigger("master", "job", 1, null)
+        trigger = new JenkinsTrigger("master", "job", '1', null)
       },
       pipeline {
         stage {
@@ -432,7 +432,7 @@ class ContextParameterProcessorSpec extends Specification {
           status = SUCCEEDED
           context = [waitTime: 10]
         }
-        trigger = new JenkinsTrigger("master", "job", 1, null)
+        trigger = new JenkinsTrigger("master", "job", '1', null)
       },
       pipeline {
         stage {

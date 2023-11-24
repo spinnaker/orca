@@ -147,7 +147,7 @@ class OperationsControllerSpec extends Specification {
     where:
     master = "master"
     job = "job"
-    buildNumber = 1337
+    buildNumber = '1337'
     requestedPipeline = [
       application: "someapp",
       trigger    : [
@@ -282,7 +282,7 @@ class OperationsControllerSpec extends Specification {
 
     master = "master"
     job = "job"
-    buildNumber = 1337
+    buildNumber = '1337'
     requestedPipeline = [
       trigger: [
         type       : "jenkins",
@@ -317,7 +317,7 @@ class OperationsControllerSpec extends Specification {
     where:
     master = "qs-master"
     job = "qs-job"
-    buildNumber = 1337
+    buildNumber = '1337'
     propertyFile = "foo.properties"
     requestedPipeline = [
       trigger: [
@@ -343,7 +343,7 @@ class OperationsControllerSpec extends Specification {
         type      : "jenkins",
         master    : "master",
         job       : "jon",
-        number    : 1,
+        number    : '1',
         properties: [
           key1        : 'val1',
           key2        : 'val2',

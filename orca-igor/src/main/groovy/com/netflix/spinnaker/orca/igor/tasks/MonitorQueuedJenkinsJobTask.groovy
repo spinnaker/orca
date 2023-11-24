@@ -53,7 +53,7 @@ class MonitorQueuedJenkinsJobTask implements OverridableTimeoutRetryableTask {
       if (build?.number == null) {
         return TaskResult.ofStatus(ExecutionStatus.RUNNING)
       } else {
-        createBacklink(stage, jenkinsController, jobName, build.number as Integer)
+        createBacklink(stage, jenkinsController, jobName, build.number as String)
         return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([buildNumber: build.number]).build()
       }
     } catch (RetrofitError e) {
@@ -84,7 +84,7 @@ class MonitorQueuedJenkinsJobTask implements OverridableTimeoutRetryableTask {
   private void createBacklink(StageExecution stageExecution,
                               String jenkinsController,
                               String jobName,
-                              Integer buildNumber) {
+                              String buildNumber) {
     if (wwwBaseUrl == null || wwwBaseUrl.isEmpty()) {
       log.info("Not creating backlink from Jenkins to Spinnaker, see https://spinnaker.io/setup/ci/jenkins/ for more info")
       return

@@ -360,7 +360,7 @@ class TaskControllerSpec extends Specification {
        trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca", "push")
       ],
       [pipelineConfigId: "1", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ],
       [pipelineConfigId: "1", id: "test-4", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new ArtifactoryTrigger("libs-demo-local")
@@ -408,7 +408,7 @@ class TaskControllerSpec extends Specification {
         trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca", "push")
       ],
       [pipelineConfigId: "1", id: "test-4", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-        trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+        trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ],
       [pipelineConfigId: "1", id: "test-5", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new ArtifactoryTrigger("libs-demo-local")
@@ -457,7 +457,7 @@ class TaskControllerSpec extends Specification {
        trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca", "push"), eventId: wrongEventId
       ],
       [pipelineConfigId: "1", id: "test-4", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file"), eventId: eventId
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file"), eventId: eventId
       ],
       [pipelineConfigId: "1", id: "test-5", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new ArtifactoryTrigger("libs-demo-local"), eventId: wrongEventId
@@ -503,10 +503,10 @@ class TaskControllerSpec extends Specification {
        trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca", "push")
       ],
       [pipelineConfigId: "2", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ],
       [pipelineConfigId: "2", id: "test-4", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ]
     ]
 
@@ -545,7 +545,7 @@ class TaskControllerSpec extends Specification {
        trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca", "push")
       ],
       [name: "pipeline3", pipelineConfigId: "3", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ]
     ]
 
@@ -581,7 +581,7 @@ class TaskControllerSpec extends Specification {
        trigger: new DockerTrigger("test-account", "test-repo", "1")
       ],
       [pipelineConfigId: "1", id: "test-2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
-       trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
+       trigger: new JenkinsTrigger("master", "job", '1', "test-property-file")
       ],
       [pipelineConfigId: "1", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(1, HOURS).toEpochMilli(),
        trigger: new DockerTrigger("test-account", "test-repo", "1")

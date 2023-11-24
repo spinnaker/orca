@@ -25,7 +25,7 @@ public class ConcourseController {
   public void notifyConcourseExecution(
       @RequestParam("stageId") String stageId,
       @RequestParam("job") String job,
-      @RequestParam("buildNumber") Integer buildNumber) {
+      @RequestParam("buildNumber") String buildNumber) {
     concourseService.pushExecution(new ConcourseStageExecution(stageId, job, buildNumber));
   }
 }

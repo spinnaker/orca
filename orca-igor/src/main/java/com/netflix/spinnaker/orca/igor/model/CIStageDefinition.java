@@ -30,7 +30,7 @@ public class CIStageDefinition implements RetryableStageDefinition {
   private final String master;
   private final String job;
   private final String propertyFile;
-  private final Integer buildNumber;
+  private final String buildNumber;
   private final BuildInfo buildInfo;
   private final boolean waitForCompletion;
   private final List<ExpectedArtifact> expectedArtifacts;
@@ -43,7 +43,7 @@ public class CIStageDefinition implements RetryableStageDefinition {
       @JsonProperty("master") String master,
       @JsonProperty("job") String job,
       @JsonProperty("property") String propertyFile,
-      @JsonProperty("buildNumber") Integer buildNumber,
+      @JsonProperty("buildNumber") String buildNumber,
       @JsonProperty("buildInfo") BuildInfo buildInfo,
       @JsonProperty("waitForCompletion") Boolean waitForCompletion,
       @JsonProperty("expectedArtifacts") List<ExpectedArtifact> expectedArtifacts,

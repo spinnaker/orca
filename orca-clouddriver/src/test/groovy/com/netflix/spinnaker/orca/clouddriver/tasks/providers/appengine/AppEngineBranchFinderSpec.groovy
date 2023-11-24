@@ -76,8 +76,8 @@ class AppEngineBranchFinderSpec extends Specification {
   @Unroll
   def "(jenkins trigger) should resolve branch, using regex (if provided) to narrow down options"() {
     given:
-    def trigger = new JenkinsTrigger("Jenkins", "poll_git_repo", 1, null)
-    trigger.buildInfo = new JenkinsBuildInfo("poll_git_repo", 1, "http://jenkins", "SUCCESS", [], scm)
+    def trigger = new JenkinsTrigger("Jenkins", "poll_git_repo", '1', null)
+    trigger.buildInfo = new JenkinsBuildInfo("poll_git_repo", '1', "http://jenkins", "SUCCESS", [], scm)
 
     def operation = [
       trigger: [
@@ -99,8 +99,8 @@ class AppEngineBranchFinderSpec extends Specification {
   @Unroll
   def "(jenkins trigger) should throw appropriate error if method cannot resolve exactly one branch"() {
     given:
-    def trigger = new JenkinsTrigger("Jenkins", "poll_git_repo", 1, null)
-    trigger.buildInfo = new JenkinsBuildInfo("poll_git_repo", 1, "http://jenkins", "SUCCESS", [], scm)
+    def trigger = new JenkinsTrigger("Jenkins", "poll_git_repo", '1', null)
+    trigger.buildInfo = new JenkinsBuildInfo("poll_git_repo", '1', "http://jenkins", "SUCCESS", [], scm)
 
     def operation = [
       trigger      : [

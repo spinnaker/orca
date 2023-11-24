@@ -24,7 +24,7 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 class TitusAmazonServerGroupCreatorDecoratorSpec extends Specification {
   def "should find image id from properties file"() {
     given:
-    JenkinsTrigger jenkinsTrigger = new JenkinsTrigger("master", "job", 1, null)
+    JenkinsTrigger jenkinsTrigger = new JenkinsTrigger("master", "job", "1", null)
     jenkinsTrigger.properties.put("imageName", "imageFromProperties")
 
     def pipeline = pipeline {
