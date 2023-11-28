@@ -76,11 +76,14 @@ class DeleteApplicationTask extends AbstractFront50Task {
         front50Service.delete(application.name)
         try {
           front50Service.deletePermission(application.name)
-        } catch (RetrofitError re) {
-          if (re.response?.status == 404) {
+        } catch (SpinnakerHttpException re) {
+          if (re.responseCode == 404) {
             return TaskResult.SUCCEEDED
           }
           log.error("Could not delete application permission", re)
+          return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
+        } catch (SpinnakerServerException e){
+          log.error("Could not delete application permission", e)
           return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
         }
         // delete Managed Delivery data
