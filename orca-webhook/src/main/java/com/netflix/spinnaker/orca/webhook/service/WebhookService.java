@@ -24,8 +24,10 @@ import com.netflix.spinnaker.orca.webhook.config.WebhookProperties;
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -112,10 +114,14 @@ public class WebhookService {
   private RestTemplateData getRestTemplateData(
       WebhookTaskType taskType, StageExecution stageExecution) {
     String destinationUrl = null;
+    var sensitiveHeaders =
+        findPreconfiguredWebhook(stageExecution.getType())
+            .map(WebhookProperties.PreconfiguredWebhook::getSensitiveHeaders)
+            .orElse(new HashMap<>());
     for (RestTemplateProvider provider : restTemplateProviders) {
       WebhookStage.StageData stageData =
           (WebhookStage.StageData) stageExecution.mapTo(provider.getStageDataType());
-      HttpHeaders headers = buildHttpHeaders(stageData.customHeaders);
+      HttpHeaders headers = buildHttpHeaders(stageData.customHeaders, sensitiveHeaders);
       HttpMethod httpMethod = HttpMethod.GET;
       HttpEntity<Object> payloadEntity = null;
       switch (taskType) {
@@ -169,8 +175,22 @@ public class WebhookService {
         .collect(Collectors.toList());
   }
 
-  private static HttpHeaders buildHttpHeaders(Map<String, Object> customHeaders) {
+  public Optional<WebhookProperties.PreconfiguredWebhook> findPreconfiguredWebhook(String type) {
+    return preconfiguredWebhookProperties.getPreconfigured().stream()
+        .filter(webhook -> Objects.equals(type, webhook.getType()) && webhook.isEnabled())
+        .findFirst();
+  }
+
+  private static HttpHeaders buildHttpHeaders(
+      Map<String, Object> customHeaders, Map<String, List<String>> sensitiveHeaders) {
     HttpHeaders headers = new HttpHeaders();
+    addHeadersIfNotBlacklisted(customHeaders, headers);
+    addHeadersIfNotBlacklisted(new HashMap<>(sensitiveHeaders), headers);
+    return headers;
+  }
+
+  private static void addHeadersIfNotBlacklisted(
+      Map<String, Object> customHeaders, HttpHeaders headers) {
     if (customHeaders != null) {
       customHeaders.forEach(
           (key, value) -> {
@@ -184,7 +204,6 @@ public class WebhookService {
             }
           });
     }
-    return headers;
   }
 
   private static class RestTemplateData {
