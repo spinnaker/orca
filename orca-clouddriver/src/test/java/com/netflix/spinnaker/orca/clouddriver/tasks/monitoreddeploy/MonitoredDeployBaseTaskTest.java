@@ -17,8 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.CharStreams;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
@@ -26,6 +29,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,6 +171,61 @@ public class MonitoredDeployBaseTaskTest {
         monitoredDeployBaseTask.getRetrofitLogMessage(unexpectedError.getResponse());
 
     assertThat(logMessageOnUnexpectedError).isEqualTo("<NO RESPONSE>");
+  }
+
+  @Test
+  void returnsEmptyHttpErrorDetailsWhenExceptionReadingHttpStatus() {
+
+    Response response = mock(Response.class);
+
+    when(response.getStatus()).thenThrow(IllegalArgumentException.class);
+
+    String logMessageOnHttpError = monitoredDeployBaseTask.getRetrofitLogMessage(response);
+
+    assertThat(logMessageOnHttpError).isEqualTo("status: \nheaders: \nresponse body: ");
+  }
+
+  @Test
+  void returnsOnlyStatusWhenExceptionParsingHttpErrorBody() {
+
+    Response response = mock(Response.class);
+
+    when(response.getStatus()).thenReturn(HttpStatus.BAD_REQUEST.value()); // arbitrary
+    when(response.getReason()).thenReturn("arbitrary reason");
+    when(response.getBody()).thenThrow(IllegalArgumentException.class);
+
+    String logMessageOnHttpError = monitoredDeployBaseTask.getRetrofitLogMessage(response);
+
+    String status = String.format("%d (%s)", response.getStatus(), response.getReason());
+
+    assertThat(logMessageOnHttpError)
+        .isEqualTo(String.format("status: %s\nheaders: \nresponse body: ", status));
+  }
+
+  @Test
+  void returnsOnlyStatusAndBodyWhenExceptionReadingHttpHeaders() throws IOException {
+
+    var converter = new JacksonConverter(objectMapper);
+    var responseBody = new HashMap<String, String>();
+
+    responseBody.put("error", "400 - Bad request, application name cannot be empty");
+
+    Response response = mock(Response.class);
+
+    when(response.getStatus()).thenReturn(HttpStatus.BAD_REQUEST.value()); // arbitrary
+    when(response.getReason()).thenReturn("arbitrary reason");
+    when(response.getBody()).thenReturn(new MockTypedInput(converter, responseBody));
+    when(response.getHeaders()).thenThrow(IllegalArgumentException.class);
+
+    String logMessageOnHttpError = monitoredDeployBaseTask.getRetrofitLogMessage(response);
+
+    String status = String.format("%d (%s)", response.getStatus(), response.getReason());
+    String body =
+        CharStreams.toString(
+            new InputStreamReader(response.getBody().in(), StandardCharsets.UTF_8));
+
+    assertThat(logMessageOnHttpError)
+        .isEqualTo(String.format("status: %s\nheaders: \nresponse body: %s", status, body));
   }
 
   static class MockTypedInput implements TypedInput {
