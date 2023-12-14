@@ -81,6 +81,7 @@ class SqlConfiguration {
       properties.retries.transactions,
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
+      "",
       interlink = interlink.orElse(null),
       executionRepositoryListeners = executionRepositoryListeners
     ).let {
@@ -155,6 +156,7 @@ class SqlConfiguration {
   @Bean
   @ConditionalOnProperty("sql.external-lock.enabled")
   fun lockProvider(datasource: DataSource): LockProvider {
+    ConnectionPools.READ.type
     return JdbcTemplateLockProvider(datasource)
   }
 }

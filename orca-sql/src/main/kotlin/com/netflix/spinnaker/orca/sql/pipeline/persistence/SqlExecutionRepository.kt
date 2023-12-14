@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.ConnectionPools
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.kork.exceptions.SystemException
@@ -50,6 +51,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import com.netflix.spinnaker.orca.pipeline.persistence.UnpausablePipelineException
 import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineException
 import de.huxhorn.sulky.ulid.SpinULID
+import org.checkerframework.checker.units.qual.C
 import java.lang.System.currentTimeMillis
 import java.security.SecureRandom
 import org.jooq.DSLContext
@@ -245,7 +247,7 @@ class SqlExecutionRepository(
   }
 
   override fun isCanceled(type: ExecutionType, id: String): Boolean {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return jooq.fetchExists(
         jooq.selectFrom(type.tableName)
           .where(id.toWhereCondition())
@@ -341,25 +343,26 @@ class SqlExecutionRepository(
   private fun cleanupOldDeletedExecutions() {
     // Note: this runs as part of a delete operation but is not critical (best effort cleanup)
     // Hence it doesn't need to be in a transaction and we "eat" the exceptions here
+    withPool(poolName) {
+      try {
+        val idsToDelete = jooq
+          .select(field("id"))
+          .from(table("deleted_executions"))
+          .where(field("deleted_at").lt(timestampSub(now(), 1, DatePart.DAY)))
+          .fetch(field("id"), Int::class.java)
 
-    try {
-      val idsToDelete = jooq
-        .select(field("id"))
-        .from(table("deleted_executions"))
-        .where(field("deleted_at").lt(timestampSub(now(), 1, DatePart.DAY)))
-        .fetch(field("id"), Int::class.java)
-
-      // Perform chunked delete in the rare event that there are many executions to clean up
-      idsToDelete
-        .chunked(25)
-        .forEach { chunk ->
-          jooq
-            .deleteFrom(table("deleted_executions"))
-            .where(field("id").`in`(*chunk.toTypedArray()))
-            .execute()
-        }
-    } catch (e: Exception) {
-      log.error("Failed to cleanup some deleted_executions", e)
+        // Perform chunked delete in the rare event that there are many executions to clean up
+        idsToDelete
+          .chunked(25)
+          .forEach { chunk ->
+            jooq
+              .deleteFrom(table("deleted_executions"))
+              .where(field("id").`in`(*chunk.toTypedArray()))
+              .execute()
+          }
+      } catch (e: Exception) {
+        log.error("Failed to cleanup some deleted_executions", e)
+      }
     }
   }
 
@@ -380,7 +383,7 @@ class SqlExecutionRepository(
   }
 
   private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<PipelineExecution> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val select = jooq.selectExecutions(
         type,
         fields = selectFields() + field("status"),
@@ -409,7 +412,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecution> =
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       Observable.from(
         fetchExecutions { pageSize, cursor ->
           selectExecutions(PIPELINE, pageSize, cursor) {
@@ -426,7 +429,7 @@ class SqlExecutionRepository(
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
     // of executions triggered costly full table scans.
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val select = if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
         jooq.selectExecutions(
           PIPELINE,
@@ -470,7 +473,7 @@ class SqlExecutionRepository(
     criteria: ExecutionCriteria,
     sorter: ExecutionComparator?
   ): MutableList<PipelineExecution> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return jooq.selectExecutions(
         ORCHESTRATION,
         conditions = {
@@ -508,7 +511,7 @@ class SqlExecutionRepository(
     }
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val execution = jooq.selectExecution(ORCHESTRATION)
         .where(
           field("id").eq(
@@ -536,7 +539,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val execution = jooq.selectExecution(PIPELINE)
         .where(
           field("id").eq(
@@ -575,7 +578,7 @@ class SqlExecutionRepository(
       }
 
   override fun retrieveAllApplicationNames(type: ExecutionType?): List<String> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return if (type == null) {
         jooq.select(field("application"))
           .from(PIPELINE.tableName)
@@ -598,7 +601,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return if (type == null) {
         jooq.select(field("application"))
           .from(PIPELINE.tableName)
@@ -624,7 +627,7 @@ class SqlExecutionRepository(
   }
 
   override fun countActiveExecutions(): ActiveExecutionsReport {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val partitionPredicate = if (partitionName != null) field(name("partition")).eq(partitionName) else value(1).eq(value(1))
 
       val orchestrationsQuery = jooq.selectCount()
@@ -653,7 +656,7 @@ class SqlExecutionRepository(
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val select = jooq.selectExecutions(
         PIPELINE,
         conditions = {
@@ -716,7 +719,7 @@ class SqlExecutionRepository(
   }
 
   override fun hasExecution(type: ExecutionType, id: String): Boolean {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return jooq.selectCount()
         .from(type.tableName)
         .where(id.toWhereCondition())
@@ -725,7 +728,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveAllExecutionIds(type: ExecutionType): MutableList<String> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       return jooq.select(field("id")).from(type.tableName).fetch("id", String::class.java)
     }
   }
@@ -745,7 +748,7 @@ class SqlExecutionRepository(
   ): Pair<String, String?> {
     if (isULID(id)) return Pair(id, null)
 
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val ts = (timestamp ?: System.currentTimeMillis())
       val row = ctx.select(field("id"))
         .from(table)
@@ -971,7 +974,7 @@ class SqlExecutionRepository(
     id: String,
     forUpdate: Boolean = false
   ): PipelineExecution? {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val select = ctx.selectExecution(type).where(id.toWhereCondition())
       if (forUpdate) {
         select.forUpdate()
@@ -986,7 +989,7 @@ class SqlExecutionRepository(
     cursor: String?,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
   ): Collection<PipelineExecution> {
-    withPool(poolName) {
+    withPool(ConnectionPools.READ.type) {
       val select = jooq.selectExecutions(
         type,
         conditions = {
