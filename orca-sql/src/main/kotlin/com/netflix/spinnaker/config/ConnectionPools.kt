@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.config;
+package com.netflix.spinnaker.config
 
-public enum ConnectionPools {
+enum class ConnectionPools (val type: String
+) {
   READ("read"),
-  WRITE("write");
-
-  private final String type;
-
-  ConnectionPools(String type) {
-    this.type = type;
-  }
-
-  public String getType() {
-    return type;
-  }
+  WRITE("write"),
 }
