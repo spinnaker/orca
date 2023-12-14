@@ -33,7 +33,7 @@ class BuildServiceSpec extends Specification {
 
   void setup() {
     igorService = Mock(IgorService)
-    buildService = new BuildService(igorService, new IgorFeatureFlagProperties())
+    buildService = new BuildService(igorService, new IgorFeatureFlagProperties(jobNameAsQueryParameter: false))
   }
 
   void 'build method encodes the job name'() {
