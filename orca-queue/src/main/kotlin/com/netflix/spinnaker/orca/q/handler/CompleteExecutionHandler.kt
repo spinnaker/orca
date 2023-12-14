@@ -84,11 +84,17 @@ class CompleteExecutionHandler(
           }
         }
       }
-      execution.pipelineConfigId?.let {
-        queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
+      log.debug("Execution ${execution.id} is with ${execution.status} status and  Disabled concurrent executions is ${execution.isLimitConcurrent}")
+      if (execution.status != RUNNING) {
+        execution.pipelineConfigId?.let {
+          queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
+        }
+      } else {
+          log.debug("Not starting waiting executions as execution ${execution.id} is currently RUNNING.")
       }
     }
   }
+
 
   private fun CompleteExecution.determineFinalStatus(
     execution: PipelineExecution,

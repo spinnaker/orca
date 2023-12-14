@@ -26,6 +26,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.lock.RetriableLock;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -34,10 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
-@RunWith(JUnitPlatform.class)
 final class CompoundExecutionOperatorTest {
   private static final String APPLICATION = "myapp";
   private static final String PIPELINE = "mypipeline";
@@ -46,8 +44,10 @@ final class CompoundExecutionOperatorTest {
   private final ExecutionRepository repository = mock(ExecutionRepository.class);
   private final ExecutionRunner runner = mock(ExecutionRunner.class);
   private final RetrySupport retrySupport = mock(RetrySupport.class);
+
+  private final RetriableLock retriableLock = mock(RetriableLock.class);
   private CompoundExecutionOperator executionOperator =
-      new CompoundExecutionOperator(repository, runner, retrySupport);
+      new CompoundExecutionOperator(repository, runner, retrySupport, retriableLock);
   private PipelineExecution execution =
       new PipelineExecutionImpl(ExecutionType.PIPELINE, EXECUTION_ID, APPLICATION);
 
