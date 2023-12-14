@@ -21,11 +21,10 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.ModelUtils
 import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.client.Response
-import retrofit.mime.TypedString
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -106,7 +105,6 @@ class SourceResolverSpec extends Specification {
     }
 
     SourceResolver resolver = new SourceResolver(
-      oortService: oort,
       mapper: mapper,
       resolver: new TargetServerGroupResolver(oortService: oort, mapper: mapper, retrySupport: retrySupport)
     )
@@ -132,12 +130,12 @@ class SourceResolverSpec extends Specification {
       'app-test',
       'aws',
       'us-west-1',
-      'current_asg_dynamic') >> new Response('http://oort.com', 200, 'Okay', [], new TypedString('''\
-    {
+      'current_asg_dynamic') >> new ServerGroup(
+    [
       "name": "app-test-v009",
       "region": "us-west-1",
       "createdTime": 1
-    }'''.stripIndent()))
+    ])
 
     source?.account == 'test'
     source?.region == 'us-west-1'
@@ -154,7 +152,6 @@ class SourceResolverSpec extends Specification {
     }
 
     SourceResolver resolver = new SourceResolver(
-      oortService: oort,
       mapper: mapper,
       resolver: new TargetServerGroupResolver(oortService: oort, mapper: mapper, retrySupport: retrySupport)
     )
@@ -181,12 +178,12 @@ class SourceResolverSpec extends Specification {
       'app-test',
       'cloudfoundry',
       'org2 > space2',
-      'current_asg_dynamic') >> new Response('http://oort.com', 200, 'Okay', [], new TypedString('''\
-    {
+      'current_asg_dynamic') >> new ServerGroup(
+    [
       "name": "app-test-v009",
       "region": "org2 > space2",
       "createdTime": 1
-    }'''.stripIndent()))
+    ])
 
     source?.account == 'test2'
     source?.region == 'org2 > space2'

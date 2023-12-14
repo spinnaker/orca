@@ -24,5 +24,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "feature.igor")
 public class IgorFeatureFlagProperties {
-  private boolean jobNameAsQueryParameter = false;
+  private boolean jobNameAsQueryParameter = true;
 }

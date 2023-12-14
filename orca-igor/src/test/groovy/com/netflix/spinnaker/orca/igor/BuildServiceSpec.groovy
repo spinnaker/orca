@@ -73,6 +73,9 @@ class BuildServiceSpec extends Specification {
   }
 
   void 'stop method sends job name in path when flag is false'() {
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(false)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
     when:
     buildService.stop(MASTER, JOB_NAME, QUEUED_BUILD, BUILD_NUMBER )
 
@@ -82,7 +85,6 @@ class BuildServiceSpec extends Specification {
 
   void 'stop method sends job name in query when flag is true'() {
     IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
-    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
     buildService = new BuildService(igorService, igorFeatureFlagProperties)
 
     when:

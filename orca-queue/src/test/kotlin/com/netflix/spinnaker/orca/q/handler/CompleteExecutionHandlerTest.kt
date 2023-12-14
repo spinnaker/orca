@@ -55,6 +55,9 @@ import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import org.springframework.context.ApplicationEventPublisher
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.argumentCaptor
+
 
 object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
@@ -379,4 +382,108 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       verify(queue).push(message, retryDelay)
     }
   }
+
+  describe("when a pipeline has branches and running with waiting executions") {
+    val configId = UUID.randomUUID().toString()
+    val runningPipeline = pipeline {
+      pipelineConfigId = configId
+      isLimitConcurrent = true
+      status = RUNNING
+      stage {
+        refId = "11"
+        status = RUNNING
+      }
+      stage {
+        refId = "12"
+        status = RUNNING
+      }
+    }
+    val waitingPipeline = pipeline {
+      pipelineConfigId = configId
+      isLimitConcurrent = true
+      status = NOT_STARTED
+      stage {
+        refId = "21"
+        status = NOT_STARTED
+      }
+      stage {
+        refId = "22"
+        status = NOT_STARTED
+      }
+    }
+
+    val message1 = CompleteExecution(runningPipeline)
+    val message2 = CompleteExecution(waitingPipeline)
+
+    beforeGroup {
+      whenever(repository.retrieve(PIPELINE, message1.executionId)) doReturn runningPipeline
+      whenever(repository.retrieve(PIPELINE, message2.executionId)) doReturn waitingPipeline
+    }
+
+    afterGroup(::resetMocks)
+
+    on("receiving message") {
+      subject.handle(message1)
+      subject.handle(message2)
+    }
+
+    it("triggers only waiting Pipeline, but not the running Pipeline") {
+      verify(queue).push(message1, retryDelay)
+      verify(queue).push(message2, retryDelay)
+      verify(queue, times(1)).push(StartWaitingExecutions(configId, !waitingPipeline.isKeepWaitingPipelines))
+    }
+  }
+
+  describe("when pipeline has branches and all executions are RUNNING ") {
+    val configId = UUID.randomUUID().toString()
+    val runningPipeline1 = pipeline {
+      pipelineConfigId = configId
+      isLimitConcurrent = true
+      status = RUNNING
+      stage {
+        refId = "11"
+        status = RUNNING
+      }
+      stage {
+        refId = "12"
+        status = RUNNING
+      }
+    }
+    val runningPipeline2 = pipeline {
+      pipelineConfigId = configId
+      isLimitConcurrent = true
+      status = RUNNING
+      stage {
+        refId = "21"
+        status = RUNNING
+      }
+      stage {
+        refId = "22"
+        status = RUNNING
+      }
+    }
+
+    val message1 = CompleteExecution(runningPipeline1)
+    val message2 = CompleteExecution(runningPipeline2)
+
+    beforeGroup {
+      whenever(repository.retrieve(PIPELINE, message1.executionId)) doReturn runningPipeline1
+      whenever(repository.retrieve(PIPELINE, message2.executionId)) doReturn runningPipeline2
+    }
+
+    afterGroup(::resetMocks)
+
+    on("receiving message") {
+      subject.handle(message1)
+      subject.handle(message2)
+    }
+
+    it("never triggers RUNNING Pipeline") {
+      verify(queue).push(message1, retryDelay)
+      verify(queue).push(message2, retryDelay)
+      verify(queue, never()).push(StartWaitingExecutions(configId, !runningPipeline1.isKeepWaitingPipelines))
+      verify(queue, never()).push(StartWaitingExecutions(configId, !runningPipeline2.isKeepWaitingPipelines))
+    }
+  }
+
 })
