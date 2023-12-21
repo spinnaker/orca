@@ -124,7 +124,7 @@ class StartPipelineTask implements Task {
           stage.id,
           getUser(stage.execution)
       )
-      TaskResult.builder(ExecutionStatus.SUCCEEDED).context([executionId: pipeline.id, executionName: pipelineConfig.name]).build()
+      return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([executionId: pipeline.id, executionName: pipelineConfig.name]).build()
     }
 
     def pipeline = dependentPipelineStarter.trigger(
@@ -136,7 +136,7 @@ class StartPipelineTask implements Task {
       getUser(stage.execution)
     )
 
-    TaskResult.builder(ExecutionStatus.SUCCEEDED).context([executionId: pipeline.id, executionName: pipelineConfig.name]).build()
+    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([executionId: pipeline.id, executionName: pipelineConfig.name]).build()
   }
 
   // There are currently two sources-of-truth for the user:
