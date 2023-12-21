@@ -91,7 +91,7 @@ class SqlExecutionRepository(
   private val retryProperties: RetryProperties,
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
-  private val poolName: String = "default",
+  private val poolName: String = ConnectionPools.WRITE.type,
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList()
 ) : ExecutionRepository, ExecutionStatisticsRepository {
