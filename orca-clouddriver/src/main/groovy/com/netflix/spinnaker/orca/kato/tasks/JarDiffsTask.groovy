@@ -16,8 +16,10 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.model.Instance.InstanceInfo
+import retrofit.converter.JacksonConverter
 
 import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
@@ -120,7 +122,9 @@ class JarDiffsTask implements DiffTask {
 
     RestAdapter restAdapter = new RestAdapter.Builder()
       .setEndpoint(address)
+      .setConverter(new JacksonConverter())
       .setClient(new OkClient(okHttpClient))
+      .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
       .build()
 
     return restAdapter.create(InstanceService.class)
