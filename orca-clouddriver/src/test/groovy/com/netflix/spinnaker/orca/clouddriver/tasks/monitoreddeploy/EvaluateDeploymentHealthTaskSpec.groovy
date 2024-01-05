@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.MortServiceSpec
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStageConfig
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep
@@ -28,9 +30,13 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployIntern
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.converter.ConversionException
+import retrofit.converter.JacksonConverter
 import spock.lang.Specification
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
 import spock.lang.Unroll
+import org.springframework.http.HttpStatus
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -41,7 +47,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
   PipelineExecutionImpl pipe = pipeline {
   }
 
-  def "should retry retrofit errors"() {
+  def "should handle retrofit network error and return the task status depending on the scenarios"() {
     given:
     def monitorServiceStub = Stub(DeploymentMonitorService) {
       evaluateHealth(_) >> {
@@ -196,6 +202,202 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     false              | true             || ExecutionStatus.TERMINAL
     false              | false            || ExecutionStatus.FAILED_CONTINUE
     false              | null             || ExecutionStatus.FAILED_CONTINUE
+  }
+
+  def "should handle retrofit http error and return the task status depending on the scenarios"() {
+
+    def converter = new JacksonConverter(new ObjectMapper())
+
+    Response response =
+      new Response(
+          "/deployment/evaluateHealth",
+          HttpStatus.BAD_REQUEST.value(),
+          "bad-request",
+          Collections.emptyList(),
+          new MortServiceSpec.MockTypedInput(converter, [
+              accountName: "account",
+              description: "simple description",
+              name: "sg1",
+              region: "region",
+              type: "openstack"
+          ]))
+
+  given:
+  def monitorServiceStub = Stub(DeploymentMonitorService) {
+    evaluateHealth(_) >> {
+      throw RetrofitError.httpError("https://foo.com/deployment/evaluateHealth", response, converter, null)
+    }
+  }
+
+  def serviceProviderStub = getServiceProviderStub(monitorServiceStub)
+
+  def task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+
+  MonitoredDeployInternalStageData stageData = new MonitoredDeployInternalStageData()
+  stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
+  stageData.deploymentMonitor.id = "LogMonitorId"
+
+  def stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+  stage.startTime = Instant.now().toEpochMilli()
+
+  when: 'we can still retry'
+  TaskResult result = task.execute(stage)
+
+  then: 'should retry'
+  result.status == ExecutionStatus.RUNNING
+      result.context.deployMonitorHttpRetryCount == 1
+
+    when: 'we ran out of retries'
+    stage.context.deployMonitorHttpRetryCount = MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
+
+    when: 'we ran out of retries and failOnError = false'
+    serviceProviderStub = getServiceProviderStub(monitorServiceStub, {DeploymentMonitorDefinition dm -> dm.failOnError = false})
+    task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+    result = task.execute(stage)
+
+    then: 'should return fail_continue'
+    result.status == ExecutionStatus.FAILED_CONTINUE
+
+    when: 'we ran out of retries and failOnError = false but there is a stage override for failOnError=true'
+    stageData.deploymentMonitor.failOnErrorOverride = true
+    stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [
+        application: pipe.application,
+        deployMonitorHttpRetryCount: MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    ])
+    stage.startTime = Instant.now().toEpochMilli()
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
+}
+
+  def "should handle retrofit conversion error and return the task status depending on the scenarios"() {
+    def converter = new JacksonConverter(new ObjectMapper())
+
+    Response response =
+        new Response(
+            "/deployment/evaluateHealth",
+            HttpStatus.BAD_REQUEST.value(),
+            "bad-request",
+            Collections.emptyList(),
+            new MortServiceSpec.MockTypedInput(converter, [
+                accountName: "account",
+                description: "simple description",
+                name: "sg1",
+                region: "region",
+                type: "openstack"
+            ]))
+
+    given:
+    def monitorServiceStub = Stub(DeploymentMonitorService) {
+      evaluateHealth(_) >> {
+        throw RetrofitError.conversionError("https://foo.com/deployment/evaluateHealth", response, converter, null, new ConversionException("Failed to parse/convert the error response body"))
+      }
+    }
+
+    def serviceProviderStub = getServiceProviderStub(monitorServiceStub)
+
+    def task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+
+    MonitoredDeployInternalStageData stageData = new MonitoredDeployInternalStageData()
+    stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
+    stageData.deploymentMonitor.id = "LogMonitorId"
+
+    def stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    stage.startTime = Instant.now().toEpochMilli()
+
+    when: 'we can still retry'
+    TaskResult result = task.execute(stage)
+
+    then: 'should retry'
+    result.status == ExecutionStatus.RUNNING
+    result.context.deployMonitorHttpRetryCount == 1
+
+    when: 'we ran out of retries'
+    stage.context.deployMonitorHttpRetryCount = MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
+
+    when: 'we ran out of retries and failOnError = false'
+    serviceProviderStub = getServiceProviderStub(monitorServiceStub, {DeploymentMonitorDefinition dm -> dm.failOnError = false})
+    task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+    result = task.execute(stage)
+
+    then: 'should return fail_continue'
+    result.status == ExecutionStatus.FAILED_CONTINUE
+
+    when: 'we ran out of retries and failOnError = false but there is a stage override for failOnError=true'
+    stageData.deploymentMonitor.failOnErrorOverride = true
+    stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [
+        application: pipe.application,
+        deployMonitorHttpRetryCount: MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    ])
+    stage.startTime = Instant.now().toEpochMilli()
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
+  }
+
+  def "should handle retrofit unexpected error and return the task status depending on the scenarios"() {
+
+    given:
+    def monitorServiceStub = Stub(DeploymentMonitorService) {
+      evaluateHealth(_) >> {
+        throw RetrofitError.unexpectedError("url", new IOException())
+      }
+    }
+
+    def serviceProviderStub = getServiceProviderStub(monitorServiceStub)
+
+    def task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+
+    MonitoredDeployInternalStageData stageData = new MonitoredDeployInternalStageData()
+    stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
+    stageData.deploymentMonitor.id = "LogMonitorId"
+
+    def stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    stage.startTime = Instant.now().toEpochMilli()
+
+    when: 'we can still retry'
+    TaskResult result = task.execute(stage)
+
+    then: 'should retry'
+    result.status == ExecutionStatus.RUNNING
+    result.context.deployMonitorHttpRetryCount == 1
+
+    when: 'we ran out of retries'
+    stage.context.deployMonitorHttpRetryCount = MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
+
+    when: 'we ran out of retries and failOnError = false'
+    serviceProviderStub = getServiceProviderStub(monitorServiceStub, {DeploymentMonitorDefinition dm -> dm.failOnError = false})
+    task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+    result = task.execute(stage)
+
+    then: 'should return fail_continue'
+    result.status == ExecutionStatus.FAILED_CONTINUE
+
+    when: 'we ran out of retries and failOnError = false but there is a stage override for failOnError=true'
+    stageData.deploymentMonitor.failOnErrorOverride = true
+    stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [
+        application: pipe.application,
+        deployMonitorHttpRetryCount: MonitoredDeployBaseTask.MAX_RETRY_COUNT
+    ])
+    stage.startTime = Instant.now().toEpochMilli()
+    result = task.execute(stage)
+
+    then: 'should terminate'
+    result.status == ExecutionStatus.TERMINAL
   }
 
   private getServiceProviderStub(monitorServiceStub) {
