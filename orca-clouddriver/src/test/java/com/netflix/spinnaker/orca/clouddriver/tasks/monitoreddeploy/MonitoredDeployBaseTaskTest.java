@@ -17,10 +17,15 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,6 +55,8 @@ public class MonitoredDeployBaseTaskTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  private DeploymentMonitorServiceProvider deploymentMonitorServiceProvider;
+
   @BeforeEach
   void setup() {
     OkClient okClient = new OkClient();
@@ -63,7 +70,7 @@ public class MonitoredDeployBaseTaskTest {
     var deploymentMonitorDefinitions = new ArrayList<DeploymentMonitorDefinition>();
     deploymentMonitorDefinitions.add(deploymentMonitorDefinition);
 
-    DeploymentMonitorServiceProvider deploymentMonitorServiceProvider =
+    deploymentMonitorServiceProvider =
         new DeploymentMonitorServiceProvider(
             okClient, retrofitLogLevel, requestInterceptor, deploymentMonitorDefinitions);
     monitoredDeployBaseTask =
@@ -93,14 +100,14 @@ public class MonitoredDeployBaseTaskTest {
         RetrofitError.httpError(
             "https://foo.com/deployment/evaluateHealth", response, new JacksonConverter(), null);
 
-    String logMessageOnHttpError =
-        monitoredDeployBaseTask.getRetrofitLogMessage(httpError.getResponse());
-    String status = HttpStatus.BAD_REQUEST.value() + " (" + HttpStatus.BAD_REQUEST.name() + ")";
+    SpinnakerHttpException httpException = new SpinnakerHttpException(httpError);
+
+    String logMessageOnSpinHttpException = monitoredDeployBaseTask.getErrorMessage(httpException);
     String body = "{\"error\":\"400 - Bad request, application name cannot be empty\"}";
 
-    assertThat(logMessageOnHttpError)
+    assertThat(logMessageOnSpinHttpException)
         .isEqualTo(
-            String.format("status: %s\nheaders: %s\nresponse body: %s", status, header, body));
+            String.format("headers: %s\nresponse body: %s", httpException.getHeaders(), body));
   }
 
   @Test
@@ -130,14 +137,13 @@ public class MonitoredDeployBaseTaskTest {
             null,
             new ConversionException("Failed to parse response"));
 
-    String status = HttpStatus.BAD_REQUEST.value() + " (" + HttpStatus.BAD_REQUEST.name() + ")";
-    String body = "{\"error\":\"400 - Bad request, application name cannot be empty\"}";
-    String logMessageOnConversionError =
-        monitoredDeployBaseTask.getRetrofitLogMessage(conversionError.getResponse());
+    SpinnakerConversionException conversionException =
+        new SpinnakerConversionException(conversionError);
 
-    assertThat(logMessageOnConversionError)
-        .isEqualTo(
-            String.format("status: %s\nheaders: %s\nresponse body: %s", status, header, body));
+    String logMessageOnSpinConversionException =
+        monitoredDeployBaseTask.getErrorMessage(conversionException);
+
+    assertThat(logMessageOnSpinConversionException).isEqualTo("<NO RESPONSE>");
   }
 
   @Test
@@ -148,10 +154,12 @@ public class MonitoredDeployBaseTaskTest {
             "https://foo.com/deployment/evaluateHealth",
             new IOException("Failed to connect to the host : foo.com"));
 
-    String logMessageOnNetworkError =
-        monitoredDeployBaseTask.getRetrofitLogMessage(networkError.getResponse());
+    SpinnakerNetworkException networkException = new SpinnakerNetworkException(networkError);
 
-    assertThat(logMessageOnNetworkError).isEqualTo("<NO RESPONSE>");
+    String logMessageOnSpinNetworkException =
+        monitoredDeployBaseTask.getErrorMessage(networkException);
+
+    assertThat(logMessageOnSpinNetworkException).isEqualTo("<NO RESPONSE>");
   }
 
   @Test
@@ -162,10 +170,44 @@ public class MonitoredDeployBaseTaskTest {
             "https://foo.com/deployment/evaluateHealth",
             new IOException("Failed to connect to the host : foo.com"));
 
-    String logMessageOnUnexpectedError =
-        monitoredDeployBaseTask.getRetrofitLogMessage(unexpectedError.getResponse());
+    SpinnakerServerException serverException = new SpinnakerServerException(unexpectedError);
 
-    assertThat(logMessageOnUnexpectedError).isEqualTo("<NO RESPONSE>");
+    String logMessageOnSpinServerException =
+        monitoredDeployBaseTask.getErrorMessage(serverException);
+
+    assertThat(logMessageOnSpinServerException).isEqualTo("<NO RESPONSE>");
+  }
+
+  @Test
+  void shouldReturnHeadersAndErrorMessageWhenErrorResponseBodyIsNull() {
+
+    var converter = new JacksonConverter(objectMapper);
+    var headers = new ArrayList<Header>();
+    var header = new Header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+    monitoredDeployBaseTask.objectMapper = mock(ObjectMapper.class);
+
+    headers.add(header);
+
+    Response response =
+        new Response(
+            "/deployment/evaluateHealth",
+            HttpStatus.BAD_REQUEST.value(),
+            HttpStatus.BAD_REQUEST.name(),
+            headers,
+            new MockTypedInput(converter, null));
+
+    RetrofitError httpError =
+        RetrofitError.httpError(
+            "https://foo.com/deployment/evaluateHealth", response, converter, null);
+
+    SpinnakerHttpException httpException = new SpinnakerHttpException(httpError);
+
+    String logMessageOnSpinHttpException = monitoredDeployBaseTask.getErrorMessage(httpException);
+    String body = "Failed to serialize the error response body";
+
+    assertThat(logMessageOnSpinHttpException)
+        .isEqualTo(
+            String.format("headers: %s\nresponse body: %s", httpException.getHeaders(), body));
   }
 
   static class MockTypedInput implements TypedInput {

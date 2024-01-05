@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy;
 
-import com.google.common.io.CharStreams;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition;
 import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
@@ -31,19 +33,13 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.StatusExplanation;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import retrofit.RetrofitError;
-import retrofit.client.Header;
-import retrofit.client.Response;
 
 public class MonitoredDeployBaseTask implements RetryableTask {
   static final int MAX_RETRY_COUNT = 3;
@@ -52,6 +48,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   private DeploymentMonitorServiceProvider deploymentMonitorServiceProvider;
   private final Map<EvaluateHealthResponse.NextStepDirective, String> summaryMapping =
       new HashMap<>();
+  ObjectMapper objectMapper = new ObjectMapper();
 
   MonitoredDeployBaseTask(
       DeploymentMonitorServiceProvider deploymentMonitorServiceProvider, Registry registry) {
@@ -138,12 +135,12 @@ public class MonitoredDeployBaseTask implements RetryableTask {
 
     try {
       return executeInternal(stage, monitorDefinition);
-    } catch (RetrofitError e) {
+    } catch (SpinnakerServerException e) {
       log.warn(
           "HTTP Error encountered while talking to {}->{}, {}}",
           monitorDefinition,
           e.getUrl(),
-          getRetrofitLogMessage(e.getResponse()),
+          getErrorMessage(e),
           e);
 
       return handleError(stage, e, true, monitorDefinition);
@@ -269,28 +266,26 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @VisibleForTesting
-  String getRetrofitLogMessage(Response response) {
-    if (response == null) {
+  String getErrorMessage(SpinnakerServerException spinnakerException) {
+    if (!(spinnakerException instanceof SpinnakerHttpException)) {
       return "<NO RESPONSE>";
     }
 
-    String body = "";
-    String status = "";
-    String headers = "";
+    SpinnakerHttpException httpException = (SpinnakerHttpException) spinnakerException;
 
     try {
-      status = String.format("%d (%s)", response.getStatus(), response.getReason());
-      body =
-          CharStreams.toString(
-              new InputStreamReader(response.getBody().in(), StandardCharsets.UTF_8));
-      headers =
-          response.getHeaders().stream().map(Header::toString).collect(Collectors.joining("\n"));
+      String body = "";
+      if (httpException.getResponseBody() != null) {
+        body = objectMapper.writeValueAsString(httpException.getResponseBody());
+      } else {
+        body = "Failed to serialize the error response body";
+      }
+      return String.format("headers: %s\nresponse body: %s", httpException.getHeaders(), body);
     } catch (Exception e) {
-      log.error(
-          "Failed to fully parse retrofit error while reading response from deployment monitor", e);
+      log.error("Failed to fully serialize http error response details", e);
     }
 
-    return String.format("status: %s\nheaders: %s\nresponse body: %s", status, headers, body);
+    return "headers: \nresponse body: ";
   }
 
   private boolean shouldFailOnError(StageExecution stage, DeploymentMonitorDefinition definition) {

@@ -16,10 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.MortServiceSpec
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStageConfig
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep
@@ -27,7 +31,10 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthRespons
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import org.springframework.http.HttpStatus
 import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.converter.JacksonConverter
 import spock.lang.Specification
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
 import spock.lang.Unroll
@@ -41,11 +48,11 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
   PipelineExecutionImpl pipe = pipeline {
   }
 
-  def "should retry retrofit errors"() {
+  def "should retry on SpinnakerServerException"() {
     given:
     def monitorServiceStub = Stub(DeploymentMonitorService) {
       evaluateHealth(_) >> {
-        throw RetrofitError.networkError("url", new IOException())
+        throw new SpinnakerServerException(RetrofitError.networkError("url", new IOException()))
       }
     }
 
@@ -196,6 +203,49 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     false              | true             || ExecutionStatus.TERMINAL
     false              | false            || ExecutionStatus.FAILED_CONTINUE
     false              | null             || ExecutionStatus.FAILED_CONTINUE
+  }
+
+  def "should return status as RUNNING when SpinnakerHttpException is thrown"() {
+    def converter = new JacksonConverter(new ObjectMapper())
+
+    Response response =
+        new Response(
+            "/deployment/evaluateHealth",
+            HttpStatus.BAD_REQUEST.value(),
+            "bad-request",
+            Collections.emptyList(),
+            new MortServiceSpec.MockTypedInput(converter, [
+                accountName: "account",
+                description: "simple description",
+                name: "sg1",
+                region: "region",
+                type: "openstack"
+            ]))
+
+    given:
+    def monitorServiceStub = Stub(DeploymentMonitorService) {
+      evaluateHealth(_) >> {
+        throw new SpinnakerHttpException(RetrofitError.httpError("https://foo.com/deployment/evaluateHealth", response, converter, null))
+      }
+    }
+
+    def serviceProviderStub = getServiceProviderStub(monitorServiceStub)
+
+    def task = new EvaluateDeploymentHealthTask(serviceProviderStub, new NoopRegistry())
+
+    MonitoredDeployInternalStageData stageData = new MonitoredDeployInternalStageData()
+    stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
+    stageData.deploymentMonitor.id = "LogMonitorId"
+
+    def stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    stage.startTime = Instant.now().toEpochMilli()
+
+    when: 'we can still retry'
+    TaskResult result = task.execute(stage)
+
+    then: 'should retry'
+    result.status == ExecutionStatus.RUNNING
+    result.context.deployMonitorHttpRetryCount == 1
   }
 
   private getServiceProviderStub(monitorServiceStub) {
