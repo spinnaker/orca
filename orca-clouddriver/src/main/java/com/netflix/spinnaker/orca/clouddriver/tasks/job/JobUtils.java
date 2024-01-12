@@ -18,6 +18,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.job;
 
 import com.netflix.frigga.Names;
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
@@ -89,7 +90,8 @@ public class JobUtils implements CloudProviderAware {
     }
   }
 
-  private Boolean applicationExists(String appName) {
+  @VisibleForTesting
+  Boolean applicationExists(String appName) {
     if (appName == null || front50Service == null) {
       return false;
     }
