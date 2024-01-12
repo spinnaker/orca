@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.exceptions.SystemException;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
@@ -274,7 +275,8 @@ public class EphemeralServerGroupsPoller extends AbstractPollingNotificationAgen
     return operation;
   }
 
-  private Optional<Application> getApplication(String applicationName) {
+  @VisibleForTesting
+  Optional<Application> getApplication(String applicationName) {
     try {
       return Optional.of(front50Service.get(applicationName));
     } catch (RetrofitError e) {
