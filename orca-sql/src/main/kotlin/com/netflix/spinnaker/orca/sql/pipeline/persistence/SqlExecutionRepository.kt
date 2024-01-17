@@ -967,7 +967,7 @@ class SqlExecutionRepository(
     insertPairs: Map<Field<Any?>, Any?>,
     updatePairs: Map<Field<Any?>, Any?>,
     id: String,
-    enableCompression: Boolean = true
+    enableCompression: Boolean
   ) {
 
     val bodyField = field("body")
