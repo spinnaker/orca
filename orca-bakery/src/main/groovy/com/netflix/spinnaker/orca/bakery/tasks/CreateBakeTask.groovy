@@ -73,8 +73,11 @@ class CreateBakeTask implements RetryableTask {
     if (!bakerySelector) {
       throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")
     }
+    log.info("bakery selector : "+bakerySelector)
 
     def bakery = bakerySelector.select(stage)
+    log.info("bakery : "+bakery)
+    log.info("bakeryService : {}", bakery.service)
     // If application exists, we should pass the owner of the application as the user to the bakery
     try {
       if (front50Service != null) {
