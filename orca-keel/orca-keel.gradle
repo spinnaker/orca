@@ -24,6 +24,7 @@ dependencies {
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("org.springframework:spring-web")
   implementation("org.springframework.boot:spring-boot-autoconfigure")
+  implementation("io.spinnaker.kork:kork-retrofit")
 
   testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   testImplementation("dev.minutest:minutest")

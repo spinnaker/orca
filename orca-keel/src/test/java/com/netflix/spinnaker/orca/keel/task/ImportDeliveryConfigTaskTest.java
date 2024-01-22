@@ -35,6 +35,7 @@ import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.okhttp.SpinnakerRequestInterceptor;
 import com.netflix.spinnaker.orca.KeelService;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
@@ -95,6 +96,7 @@ public class ImportDeliveryConfigTaskTest {
             .setRequestInterceptor(new SpinnakerRequestInterceptor(true))
             .setEndpoint(wmRuntimeInfo.getHttpBaseUrl())
             .setClient(okClient)
+            .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
             .setLogLevel(retrofitLogLevel)
             .setConverter(new JacksonConverter(objectMapper))
             .build()
@@ -250,7 +252,11 @@ public class ImportDeliveryConfigTaskTest {
         String.format(
             "Non-retryable HTTP response %s received from downstream service: %s",
             HttpStatus.BAD_REQUEST.value(),
-            "HTTP 400 " + wireMock.baseUrl() + "/delivery-configs/: 400 Bad Request");
+            "HTTP 400 "
+                + wireMock.baseUrl()
+                + "/delivery-configs/: Status: 400, URL: "
+                + wireMock.baseUrl()
+                + "/delivery-configs/, Message: Bad Request");
 
     var errorMap = new HashMap<>();
     errorMap.put("message", expectedMessage);
@@ -279,7 +285,9 @@ public class ImportDeliveryConfigTaskTest {
         "errorFromLastAttempt",
         "Retryable HTTP response 500 received from downstream service: HTTP 500 "
             + wireMock.baseUrl()
-            + "/delivery-configs/: 500 Server Error");
+            + "/delivery-configs/: Status: 500, URL: "
+            + wireMock.baseUrl()
+            + "/delivery-configs/, Message: Server Error");
 
     TaskResult running = TaskResult.builder(ExecutionStatus.RUNNING).context(contextMap).build();
 
