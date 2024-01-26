@@ -15,14 +15,17 @@
  */
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import de.huxhorn.sulky.ulid.ULID
 import org.jooq.DSLContext
+import org.jooq.Field
 import org.jooq.Record
 import org.jooq.Table
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
+import java.sql.ResultSet
 
 /**
  * Run the provided [fn] in a transaction.
@@ -93,13 +96,29 @@ internal val Table<Record>.compressedExecTable: Table<Record>
 /**
  * Selects all stages for an [executionType] and List [executionIds].
  */
-internal fun DSLContext.selectExecutionStages(executionType: ExecutionType, executionIds: Collection<String>) =
-  select(field("execution_id"),
-      field("body"),
-      field("compressed_body"),
-      field("compression_type"))
-    .from(executionType.stagesTableName)
-    .leftJoin(executionType.stagesTableName.compressedExecTable).using(field("id"))
+internal fun DSLContext.selectExecutionStages(executionType: ExecutionType, executionIds: Collection<String>, compressionProperties: ExecutionCompressionProperties): ResultSet {
+  val selectFrom = select(selectStageFields(compressionProperties)).from(executionType.stagesTableName)
+
+  if (compressionProperties.enabled) {
+    selectFrom.leftJoin(executionType.stagesTableName.compressedExecTable).using(field("id"))
+  }
+
+  return selectFrom
     .where(field("execution_id").`in`(*executionIds.toTypedArray()))
     .fetch()
     .intoResultSet()
+}
+
+private fun selectStageFields(compressionProperties: ExecutionCompressionProperties): List<Field<Any>> {
+  if (compressionProperties.enabled) {
+    return listOf(field("execution_id"),
+      field("body"),
+      field("compressed_body"),
+      field("compression_type")
+    )
+  }
+
+  return listOf(field("execution_id"),
+    field("body")
+  )
+}

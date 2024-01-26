@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.CompressionType
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import dev.minutest.junit.JUnit5Minutests
@@ -32,7 +33,9 @@ class ExecutionMapperTest : JUnit5Minutests {
   fun tests() = rootContext<Unit> {
 
     context("handle body decompression") {
-      val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200)
+      val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, ExecutionCompressionProperties().apply {
+        enabled = true
+      })
 
       val mockedResultSet = mock<ResultSet>()
 

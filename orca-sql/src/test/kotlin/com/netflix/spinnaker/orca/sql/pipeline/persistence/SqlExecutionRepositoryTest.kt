@@ -25,9 +25,11 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jooq.impl.DSL.field
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.testcontainers.DockerClientFactory
@@ -183,6 +185,24 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
         val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineId)
         assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+      }
+
+      test("store compressed, retrieve with compression disabled") {
+        sqlExecutionRepository.store(pipelineExecution)
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(1)
+
+        val numCompressedStages = database.context.fetchCount(testStagesTable.compressedExecTable)
+        assertThat(numCompressedStages).isEqualTo(1)
+
+        val numExecutions = database.context.fetchCount(testTable)
+        assertThat(numExecutions).isEqualTo(1)
+
+        val numStages = database.context.fetchCount(testStagesTable)
+        assertThat(numStages).isEqualTo(1)
+
+        assertThatThrownBy { sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineId) }.isInstanceOf(ExecutionNotFoundException::class.java)
       }
     }
   }

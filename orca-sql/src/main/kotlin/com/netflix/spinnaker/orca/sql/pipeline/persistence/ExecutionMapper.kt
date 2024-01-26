@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.config.CompressionType
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import java.sql.ResultSet
@@ -34,7 +35,8 @@ import java.nio.charset.StandardCharsets
  */
 class ExecutionMapper(
   private val mapper: ObjectMapper,
-  private val stageBatchSize: Int
+  private val stageBatchSize: Int,
+  private val compressionProperties: ExecutionCompressionProperties
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -49,15 +51,18 @@ class ExecutionMapper(
    */
   @VisibleForTesting
   fun getDecompressedBody(rs: ResultSet): String {
-    val body = rs.getString("body")
-    return if (body.isNullOrEmpty()) {
+    val body: String? = rs.getString("body")
+
+    // If compression is disabled, rs doesn't contain compression-related
+    // fields, so don't try to access them.
+    return if (compressionProperties.enabled && body.isNullOrEmpty()) {
       val compressionType = CompressionType.valueOf(rs.getString("compression_type"))
       val compressedBody = rs.getBytes("compressed_body")
       compressionType.getInflator(compressedBody.inputStream())
         .bufferedReader(StandardCharsets.UTF_8)
         .use { it.readText() }
     } else {
-      body
+      body ?: ""
     }
   }
 
@@ -67,20 +72,23 @@ class ExecutionMapper(
     val legacyMap = mutableMapOf<String, String>()
 
     while (rs.next()) {
-      mapper.readValue<PipelineExecution>(getDecompressedBody(rs))
-        .also {
-          execution ->
-          results.add(execution)
-          execution.partition = rs.getString("partition")
+      val body = getDecompressedBody(rs)
+      if (body.isNotEmpty()) {
+        mapper.readValue<PipelineExecution>(body)
+          .also {
+            execution ->
+            results.add(execution)
+            execution.partition = rs.getString("partition")
 
-          if (rs.getString("id") != execution.id) {
-            // Map legacyId executions to their current ULID
-            legacyMap[execution.id] = rs.getString("id")
-            executionMap[rs.getString("id")] = execution
-          } else {
-            executionMap[execution.id] = execution
+            if (rs.getString("id") != execution.id) {
+              // Map legacyId executions to their current ULID
+              legacyMap[execution.id] = rs.getString("id")
+              executionMap[rs.getString("id")] = execution
+            } else {
+              executionMap[execution.id] = execution
+            }
           }
-        }
+      }
     }
 
     if (results.isNotEmpty()) {
@@ -95,7 +103,7 @@ class ExecutionMapper(
           }
         }
 
-        context.selectExecutionStages(type, executionIds).let { stageResultSet ->
+        context.selectExecutionStages(type, executionIds, compressionProperties).let { stageResultSet ->
           while (stageResultSet.next()) {
             mapStage(stageResultSet, executionMap)
           }

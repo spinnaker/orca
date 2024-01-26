@@ -1142,12 +1142,17 @@ class SqlExecutionRepository(
     fields: List<Field<Any>> = selectFields(),
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
-  ) =
-    select(fields)
-      .from(type.tableName)
-      .leftJoin(type.tableName.compressedExecTable).using(field("id"))
+  ): SelectForUpdateStep<out Record> {
+     val selectFrom = select(fields).from(type.tableName)
+
+    if (compressionProperties.enabled) {
+      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+    }
+
+    return selectFrom
       .let { conditions(it) }
       .let { seek(it) }
+  }
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
@@ -1155,27 +1160,46 @@ class SqlExecutionRepository(
     usingIndex: String,
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
-  ) =
-    select(fields)
-      .from(if (jooq.dialect() == SQLDialect.MYSQL) type.tableName.forceIndex(usingIndex) else type.tableName)
-      .leftJoin(type.tableName.compressedExecTable).using(field("id"))
+  ): SelectForUpdateStep<out Record> {
+     val selectFrom = select(fields).from(if (jooq.dialect() == SQLDialect.MYSQL) type.tableName.forceIndex(usingIndex) else type.tableName)
+
+    if (compressionProperties.enabled) {
+      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+    }
+
+    return selectFrom
       .let { conditions(it) }
       .let { seek(it) }
+  }
 
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()) =
-    select(fields)
-      .from(type.tableName)
-      .leftJoin(type.tableName.compressedExecTable).using(field("id"))
+  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()): SelectJoinStep<Record> {
+    val selectFrom = select(fields).from(type.tableName)
 
-  private fun selectFields() =
-    listOf(field("id"),
-      field("body"),
-      field("compressed_body"),
-      field("compression_type"),
-      field(name("partition")))
+    if (compressionProperties.enabled) {
+      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+    }
+
+    return selectFrom
+  }
+
+  private fun selectFields(): List<Field<Any>> {
+    if (compressionProperties.enabled) {
+      return listOf(field("id"),
+        field("body"),
+        field("compressed_body"),
+        field("compression_type"),
+        field(name("partition"))
+      )
+    }
+
+    return listOf(field("id"),
+        field("body"),
+        field(name("partition"))
+    )
+  }
 
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize).map(fetch().intoResultSet(), jooq)
+    ExecutionMapper(mapper, stageReadSize, compressionProperties).map(fetch().intoResultSet(), jooq)
 
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()
