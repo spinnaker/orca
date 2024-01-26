@@ -15,12 +15,16 @@
  */
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.CompressionType
 import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import org.assertj.core.api.Assertions.assertThat
@@ -59,10 +63,16 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
     context("upserting executions with body compression") {
 
-      val testType = ExecutionType.PIPELINE // arbitrary choice of execution type
+      val testType = ExecutionType.PIPELINE
       val testTable = testType.tableName
+      val testStagesTable = testType.stagesTableName
       val testId = "test_id"
       val testApplication = "test-application"
+      val pipelineExecution = PipelineExecutionImpl(testType, testApplication).apply {
+        stage {}
+      }
+      val pipelineId = pipelineExecution.id
+
       val testBody = "test_body" // not long enough to compress
       val testPairs = mutableMapOf(
           field("id") to testId,
@@ -80,6 +90,14 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
       )
 
       test("verify assumptions") {
+        // Verify that pipelineExecution is compressible
+        assertThat(sqlExecutionRepository.getCompressedBody(pipelineId, orcaObjectMapper.writeValueAsString(pipelineExecution))).isNotNull()
+
+        // And that at least one stage is compressible.  Use firstOrNull and
+        // assertThat instead of first since failures are easier to identify.
+        assertThat(pipelineExecution.stages.firstOrNull { stage -> (sqlExecutionRepository.getCompressedBody(stage.id, orcaObjectMapper.writeValueAsString(stage)) != null) }).isNotNull()
+
+
         // Verify that testBody is not big enough to compress
         assertThat(sqlExecutionRepository.getCompressedBody(testId, testBody)).isNull()
 
@@ -148,6 +166,24 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         assertThat(executions.getValue(0, field("body"))).isEqualTo(testCompressibleBody)
       }
 
+      test("store and retrieve with compression disabled") {
+        sqlExecutionRepositoryNoCompression.store(pipelineExecution)
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(0)
+
+        val numCompressedStages = database.context.fetchCount(testStagesTable.compressedExecTable)
+        assertThat(numCompressedStages).isEqualTo(0)
+
+        val numExecutions = database.context.fetchCount(testTable)
+        assertThat(numExecutions).isEqualTo(1)
+
+        val numStages = database.context.fetchCount(testStagesTable)
+        assertThat(numStages).isEqualTo(1)
+
+        val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineId)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+      }
     }
   }
 
@@ -155,7 +191,10 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
     val database = SqlTestUtil.initTcMysqlDatabase()!!
 
     val testRetryProprties = RetryProperties()
-    val testExecutionCompressionProperties = ExecutionCompressionProperties().apply {
+
+    val orcaObjectMapper = OrcaObjectMapper.newInstance()
+
+    val executionCompressionPropertiesEnabled = ExecutionCompressionProperties().apply {
       enabled = true
       bodyCompressionThreshold = 9
       compressionType = CompressionType.ZLIB
@@ -165,14 +204,50 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
       SqlExecutionRepository(
         "test",
         database.context,
-        ObjectMapper(),
+        orcaObjectMapper,
         testRetryProprties,
         10,
         100,
         "poolName",
         null,
         emptyList(),
-        testExecutionCompressionProperties
+        executionCompressionPropertiesEnabled
       )
+
+    val executionCompressionPropertiesDisabled = ExecutionCompressionProperties().apply {
+      enabled = false
+    }
+
+    val sqlExecutionRepositoryNoCompression =
+      SqlExecutionRepository(
+        "test",
+        database.context,
+        orcaObjectMapper,
+        testRetryProprties,
+        10,
+        100,
+        "poolName",
+        null,
+        emptyList(),
+        executionCompressionPropertiesDisabled
+      )
+
   }
+}
+
+/**
+ * Build a top-level stage. Use in the context of [#pipeline].  This duplicates
+ * a function in orca-api-tck, but liquibase complains about duplicate schema
+ * files when orca-sql depends on orca-api-tck.
+ *
+ * Automatically hooks up execution.
+ */
+private fun PipelineExecution.stage(init: StageExecution.() -> Unit): StageExecution {
+  val stage = StageExecutionImpl()
+  stage.execution = this
+  stage.type = "test"
+  stage.refId = "1"
+  stages.add(stage)
+  stage.init()
+  return stage
 }
