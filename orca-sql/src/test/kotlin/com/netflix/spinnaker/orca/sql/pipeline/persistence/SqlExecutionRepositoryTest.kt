@@ -19,50 +19,32 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.CompressionType
 import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doNothing
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.eq
-import com.nhaarman.mockito_kotlin.inOrder
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.spy
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
+import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
-import java.nio.charset.StandardCharsets
 import org.assertj.core.api.Assertions.assertThat
-import org.jooq.DSLContext
 import org.jooq.impl.DSL.field
-import org.jooq.impl.DSL.table
-import org.mockito.InOrder
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.testcontainers.DockerClientFactory
+import java.lang.System.currentTimeMillis
 
 class SqlExecutionRepositoryTest : JUnit5Minutests {
 
-  fun tests() = rootContext<Unit> {
+  fun tests() = rootContext<Fixture> {
+    fixture {
+      Fixture()
+    }
 
-    val mockedDslContext = mock<DSLContext>()
-    val mockedObjectMapper = mock<ObjectMapper>()
-    val testRetryProprties = RetryProperties()
-    val testExecutionCompressionProperties = ExecutionCompressionProperties()
+    beforeAll {
+      assumeTrue(DockerClientFactory.instance().isDockerAvailable)
+    }
+
+    after {
+      SqlTestUtil.cleanupDb(database.context)
+    }
 
     context("execution body compression") {
-
-      testExecutionCompressionProperties.enabled = true
-      testExecutionCompressionProperties.bodyCompressionThreshold = 9
-
-      val sqlExecutionRepository = SqlExecutionRepository("test",
-        mockedDslContext,
-        mockedObjectMapper,
-        testRetryProprties,
-        10,
-        100,
-        "poolName",
-        null,
-        emptyList(),
-        testExecutionCompressionProperties
-      )
-
       test("Compression performed when length limit breached") {
         val compressedBody =
           sqlExecutionRepository.getCompressedBody(id = "12345", body = "12345678910")
@@ -77,94 +59,120 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
     context("upserting executions with body compression") {
 
-      val testTable = table("my_table")
+      val testType = ExecutionType.PIPELINE // arbitrary choice of execution type
+      val testTable = testType.tableName
       val testId = "test_id"
-      val testBody = "test_body"
+      val testApplication = "test-application"
+      val testBody = "test_body" // not long enough to compress
       val testPairs = mutableMapOf(
-        field("body") to testBody
+          field("id") to testId,
+          field("application") to testApplication,
+          field("body") to testBody,
+          field("build_time") to currentTimeMillis()
       )
 
-      test("Compressed upsert not performed when body not compressed") {
-        val sqlExecutionRepository = spy(SqlExecutionRepository("test",
-          mockedDslContext,
-          mockedObjectMapper,
-          testRetryProprties,
-          10,
-          100,
-          "poolName",
-          null,
-          emptyList(),
-          testExecutionCompressionProperties))
-
-        doNothing().`when`(sqlExecutionRepository)
-          .upsert(mockedDslContext, testTable, testPairs, testPairs, testId)
-        doReturn(null).`when`(sqlExecutionRepository)
-          .getCompressedBody(testId, testBody)
-
-        sqlExecutionRepository.upsert(mockedDslContext,
-          table = testTable,
-          insertPairs = testPairs,
-          updatePairs = testPairs,
-          id = testId,
-          enableCompression = true)
-
-        verify(sqlExecutionRepository, times(1)).upsert(
-          ctx = mockedDslContext,
-          table = table("my_table"),
-          insertPairs = testPairs,
-          updatePairs = testPairs,
-          updateId = testId
-        )
-      }
-
-      test("Compressed upsert performed when body is compressed") {
-        val sqlExecutionRepository = spy(SqlExecutionRepository("test",
-          mockedDslContext,
-          mockedObjectMapper,
-          testRetryProprties,
-          10,
-          100,
-          "poolName",
-          null,
-          emptyList(),
-          testExecutionCompressionProperties))
-
-        val testCompressedBody = testBody.toByteArray(StandardCharsets.UTF_8)
-        doReturn(testCompressedBody).`when`(sqlExecutionRepository)
-          .getCompressedBody(testId, testBody)
-        doNothing().`when`(sqlExecutionRepository)
-          .upsert(eq(mockedDslContext), any(), any(), any(), eq(testId))
-
-        sqlExecutionRepository.upsert(mockedDslContext,
-          table = testTable,
-          insertPairs = testPairs,
-          updatePairs = testPairs,
-          id = testId,
-          enableCompression = true)
-
-        testPairs[field("body")] = ""
-        val inOrder: InOrder = inOrder(sqlExecutionRepository)
-        inOrder.verify(sqlExecutionRepository).upsert(
-          ctx = mockedDslContext,
-          table = table("my_table"),
-          insertPairs = testPairs,
-          updatePairs = testPairs,
-          updateId = testId
-        )
-
-        val expectedCompressedTablePairs = mapOf(
+      val testCompressibleBody = "test_body_long_enough_to_compress"
+      val testCompressiblePairs = mutableMapOf(
           field("id") to testId,
-          field("compressed_body") to testCompressedBody,
-          field("compression_type") to CompressionType.ZLIB.type
-        )
-        inOrder.verify(sqlExecutionRepository).upsert(
-          ctx = mockedDslContext,
-          table = table("my_table_compressed_executions"),
-          insertPairs = expectedCompressedTablePairs,
-          updatePairs = expectedCompressedTablePairs,
-          updateId = testId
-        )
+          field("application") to testApplication,
+          field("body") to testCompressibleBody,
+          field("build_time") to currentTimeMillis()
+      )
+
+      test("verify assumptions") {
+        // Verify that testBody is not big enough to compress
+        assertThat(sqlExecutionRepository.getCompressedBody(testId, testBody)).isNull()
+
+        // and that testCompressibleBody is
+        assertThat(sqlExecutionRepository.getCompressedBody(testId, testCompressibleBody)).isNotNull()
       }
+
+      test("Compressed upsert not performed when compression enabled, but body not big enough to compress") {
+        sqlExecutionRepository.upsert(
+          database.context,
+          table = testTable,
+          insertPairs = testPairs,
+          updatePairs = testPairs,
+          id = testId,
+          enableCompression = true
+        )
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(0)
+
+        val executions = database.context.select(listOf(field("id"), field("body"))).from(testTable).fetch()
+        assertThat(executions).hasSize(1)
+        assertThat(executions.getValue(0, field("id"))).isEqualTo(testId)
+        assertThat(executions.getValue(0, field("body"))).isEqualTo(testBody)
+      }
+
+      test("Compressed upsert performed when body is big enough to compress, and compression is enabled") {
+        sqlExecutionRepository.upsert(
+          database.context,
+          table = testTable,
+          insertPairs = testCompressiblePairs,
+          updatePairs = testCompressiblePairs,
+          id = testId,
+          enableCompression = true
+        )
+
+        val testCompressedBody = sqlExecutionRepository.getCompressedBody(testId, testCompressibleBody)
+
+        val compressedExecutions = database.context.select(listOf(field("id"), field("compressed_body"))).from(testTable.compressedExecTable).fetch()
+        assertThat(compressedExecutions).hasSize(1)
+        assertThat(compressedExecutions.getValue(0, field("id"))).isEqualTo(testId)
+        assertThat(compressedExecutions.getValue(0, field("compressed_body"))).isEqualTo(testCompressedBody)
+
+        val executions = database.context.select(listOf(field("id"), field("body"))).from(testTable).fetch()
+        assertThat(executions).hasSize(1)
+        assertThat(executions.getValue(0, field("id"))).isEqualTo(testId)
+        assertThat(executions.getValue(0, field("body"))).asString().isEmpty()
+      }
+
+      test("Compressed upsert not performed when body is big enough to compress, but compression is disabled") {
+        sqlExecutionRepository.upsert(
+          database.context,
+          table = testTable,
+          insertPairs = testCompressiblePairs,
+          updatePairs = testCompressiblePairs,
+          id = testId,
+          enableCompression = false
+        )
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(0)
+
+        val executions = database.context.select(listOf(field("id"), field("body"))).from(testTable).fetch()
+        assertThat(executions).hasSize(1)
+        assertThat(executions.getValue(0, field("id"))).isEqualTo(testId)
+        assertThat(executions.getValue(0, field("body"))).isEqualTo(testCompressibleBody)
+      }
+
     }
+  }
+
+  private inner class Fixture {
+    val database = SqlTestUtil.initTcMysqlDatabase()!!
+
+    val testRetryProprties = RetryProperties()
+    val testExecutionCompressionProperties = ExecutionCompressionProperties().apply {
+      enabled = true
+      bodyCompressionThreshold = 9
+      compressionType = CompressionType.ZLIB
+    }
+
+    val sqlExecutionRepository =
+      SqlExecutionRepository(
+        "test",
+        database.context,
+        ObjectMapper(),
+        testRetryProprties,
+        10,
+        100,
+        "poolName",
+        null,
+        emptyList(),
+        testExecutionCompressionProperties
+      )
   }
 }
