@@ -813,7 +813,7 @@ class SqlExecutionRepository(
           insertPairs.plus(field("config_id") to execution.pipelineConfigId),
           updatePairs.plus(field("config_id") to execution.pipelineConfigId),
           executionId,
-          compressionProperties.enabled
+          compressionProperties.isWriteEnabled()
         )
         ORCHESTRATION -> upsert(
           ctx,
@@ -821,7 +821,7 @@ class SqlExecutionRepository(
           insertPairs,
           updatePairs,
           executionId,
-          compressionProperties.enabled
+          compressionProperties.isWriteEnabled()
         )
       }
 
@@ -883,7 +883,7 @@ class SqlExecutionRepository(
       field("body") to body
     )
 
-    upsert(ctx, stageTable, insertPairs, updatePairs, stage.id, compressionProperties.enabled)
+    upsert(ctx, stageTable, insertPairs, updatePairs, stage.id, compressionProperties.isWriteEnabled())
 
     // This method is called from [storeInternal] as well. We don't want to notify multiple times for the same
     // overall persist operation.

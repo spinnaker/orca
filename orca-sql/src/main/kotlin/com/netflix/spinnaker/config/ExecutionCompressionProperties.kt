@@ -40,6 +40,12 @@ class ExecutionCompressionProperties {
   var enabled: Boolean = false
 
   /**
+   * Determines whether writing compressed bodies is enabled, or only reading.
+   * Only relevant when enabled is true.
+   */
+  var compressionMode: CompressionMode = CompressionMode.READ_WRITE;
+
+  /**
    * Defines the body size threshold, in bytes, above which the body will be compressed before
    * upsertion
    */
@@ -49,6 +55,8 @@ class ExecutionCompressionProperties {
    * Controls the library to be used when compressing bodies
    */
   var compressionType: CompressionType = CompressionType.ZLIB
+
+  fun isWriteEnabled() = enabled && (compressionMode == CompressionMode.READ_WRITE)
 }
 
 /**
@@ -69,4 +77,9 @@ enum class CompressionType(val type: String) {
       GZIP -> GZIPInputStream(inStream)
       ZLIB -> InflaterInputStream(inStream)
     }
+}
+
+enum class CompressionMode {
+     READ_WRITE,
+     READ_ONLY;
 }

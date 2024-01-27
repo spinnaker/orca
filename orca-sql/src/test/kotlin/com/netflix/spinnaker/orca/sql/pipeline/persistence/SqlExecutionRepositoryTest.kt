@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
+import com.netflix.spinnaker.config.CompressionMode
 import com.netflix.spinnaker.config.CompressionType
 import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
@@ -204,6 +205,44 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
         assertThatThrownBy { sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineId) }.isInstanceOf(ExecutionNotFoundException::class.java)
       }
+
+      test("store compressed, retrieve in read-only mode") {
+        sqlExecutionRepository.store(pipelineExecution)
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(1)
+
+        val numCompressedStages = database.context.fetchCount(testStagesTable.compressedExecTable)
+        assertThat(numCompressedStages).isEqualTo(1)
+
+        val numExecutions = database.context.fetchCount(testTable)
+        assertThat(numExecutions).isEqualTo(1)
+
+        val numStages = database.context.fetchCount(testStagesTable)
+        assertThat(numStages).isEqualTo(1)
+
+        val actualPipelineExecution = sqlExecutionRepositoryReadOnly.retrieve(testType, pipelineId)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+      }
+
+      test("In read-only mode, body big enough to compress is stored as plain text") {
+        sqlExecutionRepositoryReadOnly.store(pipelineExecution)
+
+        val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
+        assertThat(numCompressedExecutions).isEqualTo(0)
+
+        val numCompressedStages = database.context.fetchCount(testStagesTable.compressedExecTable)
+        assertThat(numCompressedStages).isEqualTo(0)
+
+        val numExecutions = database.context.fetchCount(testTable)
+        assertThat(numExecutions).isEqualTo(1)
+
+        val numStages = database.context.fetchCount(testStagesTable)
+        assertThat(numStages).isEqualTo(1)
+
+        val actualPipelineExecution = sqlExecutionRepositoryReadOnly.retrieve(testType, pipelineId)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+      }
     }
   }
 
@@ -252,6 +291,26 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         executionCompressionPropertiesDisabled
       )
 
+    val executionCompressionPropertiesReadOnly = ExecutionCompressionProperties().apply {
+      enabled = true
+      compressionMode = CompressionMode.READ_ONLY
+      bodyCompressionThreshold = 9
+      compressionType = CompressionType.ZLIB
+    }
+
+    val sqlExecutionRepositoryReadOnly =
+      SqlExecutionRepository(
+        "test",
+        database.context,
+        orcaObjectMapper,
+        testRetryProprties,
+        10,
+        100,
+        "poolName",
+        null,
+        emptyList(),
+        executionCompressionPropertiesReadOnly
+      )
   }
 }
 
