@@ -26,6 +26,7 @@ import org.jooq.Table
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import java.sql.ResultSet
+import java.time.Duration
 
 /**
  * Run the provided [fn] in a transaction.
@@ -40,7 +41,7 @@ internal fun DSLContext.transactional(
         fn(DSL.using(ctx))
       }
     },
-    5, 100, false
+    5, Duration.ofMillis(100), false
   )
 }
 

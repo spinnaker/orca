@@ -54,6 +54,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineExcept
 import de.huxhorn.sulky.ulid.SpinULID
 import java.lang.System.currentTimeMillis
 import java.security.SecureRandom
+import java.time.Duration
 import org.jooq.DSLContext
 import org.jooq.DatePart
 import org.jooq.Field
@@ -1133,7 +1134,7 @@ class SqlExecutionRepository(
           fn(DSL.using(ctx))
         }
       },
-      retryProperties.maxRetries, retryProperties.backoffMs, false
+      retryProperties.maxRetries, Duration.ofMillis(retryProperties.backoffMs), false
     )
   }
 
