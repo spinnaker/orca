@@ -48,6 +48,7 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -240,6 +241,83 @@ public class ImportDeliveryConfigTaskTest {
 
     // The timestamp field will have the current time, and hence only the instance type is verified
     assertThat(actualHttpErrorBody.getTimestamp()).isInstanceOf(Instant.class);
+  }
+
+  @Test
+  public void testTaskResultWhenErrorBodyIsEmpty() {
+
+    String expectedMessage =
+        String.format(
+            "Non-retryable HTTP response %s received from downstream service: %s",
+            HttpStatus.BAD_REQUEST.value(),
+            "HTTP 400 " + wireMock.baseUrl() + "/delivery-configs/: 400 Bad Request");
+
+    var errorMap = new HashMap<>();
+    errorMap.put("message", expectedMessage);
+
+    TaskResult terminal =
+        TaskResult.builder(ExecutionStatus.TERMINAL).context(Map.of("error", errorMap)).build();
+
+    // Simulate any 4xx http error with empty error response body
+    String emptyBody = "";
+    simulateFault("/delivery-configs/", emptyBody, HttpStatus.BAD_REQUEST);
+
+    getDeliveryConfigManifest();
+
+    var result = importDeliveryConfigTask.execute(stage);
+
+    verifyGetDeliveryConfigManifestInvocations();
+
+    assertThat(result).isEqualTo(terminal);
+  }
+
+  @Test
+  public void testTaskResultWhenHttp5xxErrorIsThrown() {
+
+    contextMap.put("attempt", (Integer) contextMap.get("attempt") + 1);
+    contextMap.put(
+        "errorFromLastAttempt",
+        "Retryable HTTP response 500 received from downstream service: HTTP 500 "
+            + wireMock.baseUrl()
+            + "/delivery-configs/: 500 Server Error");
+
+    TaskResult running = TaskResult.builder(ExecutionStatus.RUNNING).context(contextMap).build();
+
+    // Simulate any 5xx http error with empty error response body
+    String emptyBody = "";
+    simulateFault("/delivery-configs/", emptyBody, HttpStatus.INTERNAL_SERVER_ERROR);
+
+    getDeliveryConfigManifest();
+
+    var result = importDeliveryConfigTask.execute(stage);
+
+    verifyGetDeliveryConfigManifestInvocations();
+
+    assertThat(result).isEqualTo(running);
+  }
+
+  @Test
+  public void testTaskResultWhenAPIFailsWithNetworkError() {
+
+    contextMap.put("attempt", (Integer) contextMap.get("attempt") + 1);
+    contextMap.put(
+        "errorFromLastAttempt",
+        String.format(
+            "Network error talking to downstream service, attempt 1 of %s: Connection reset: Connection reset",
+            contextMap.get("maxRetries")));
+
+    TaskResult running = TaskResult.builder(ExecutionStatus.RUNNING).context(contextMap).build();
+
+    // Simulate network failure
+    simulateFault("/delivery-configs/", Fault.CONNECTION_RESET_BY_PEER);
+
+    getDeliveryConfigManifest();
+
+    var result = importDeliveryConfigTask.execute(stage);
+
+    verifyGetDeliveryConfigManifestInvocations();
+
+    assertThat(result).isEqualTo(running);
   }
 
   private static Stream<Arguments> parameterizePositiveHttpErrorScenario() {
