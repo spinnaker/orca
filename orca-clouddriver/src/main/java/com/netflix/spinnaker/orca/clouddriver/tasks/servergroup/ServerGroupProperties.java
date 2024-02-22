@@ -20,16 +20,28 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "resize-server-group")
-public class ResizeServerGroupProperties {
+@ConfigurationProperties(prefix = "server-group")
+public class ServerGroupProperties {
 
-  private boolean useTargetDesiredSize = true;
+  private Resize resize = new Resize();
 
-  public void setUseTargetDesiredSize(boolean useTargetDesiredSize) {
-    this.useTargetDesiredSize = useTargetDesiredSize;
+  public static class Resize {
+    private boolean matchInstancesSize;
+
+    public void setMatchInstancesSize(boolean matchInstancesSize) {
+      this.matchInstancesSize = matchInstancesSize;
+    }
+
+    public boolean isMatchInstancesSize() {
+      return matchInstancesSize;
+    }
   }
 
-  public boolean isUseTargetDesiredSize() {
-    return useTargetDesiredSize;
+  public void setResize(Resize resize) {
+    this.resize = resize;
+  }
+
+  public Resize getResize() {
+    return resize;
   }
 }

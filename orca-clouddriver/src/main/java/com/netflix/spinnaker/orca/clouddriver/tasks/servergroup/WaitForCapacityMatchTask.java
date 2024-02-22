@@ -27,10 +27,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
 
-  private final ResizeServerGroupProperties resizeServerGroupProperties;
+  private final ServerGroupProperties serverGroupProperties;
 
-  public WaitForCapacityMatchTask(ResizeServerGroupProperties resizeServerGroupProperties) {
-    this.resizeServerGroupProperties = resizeServerGroupProperties;
+  public WaitForCapacityMatchTask(ServerGroupProperties serverGroupProperties) {
+    this.serverGroupProperties = serverGroupProperties;
   }
 
   @Override
@@ -94,7 +94,15 @@ public class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
         desired = capacity.getDesired();
       }
 
-      if (resizeServerGroupProperties.isUseTargetDesiredSize()) {
+      if (serverGroupProperties.getResize().isMatchInstancesSize()) {
+        splainer.add(
+            "checking if capacity matches (desired=${desired}, instances.size()=${instances.size()}) ");
+        if (desired == null || desired != instances.size()) {
+          splainer.add(
+              "short-circuiting out of WaitForCapacityMatchTask because expected and current capacity don't match}");
+          return false;
+        }
+      } else {
         Integer targetDesiredSize =
             Optional.ofNullable((Number) context.get("targetDesiredSize"))
                 .map(Number::intValue)
@@ -115,14 +123,6 @@ public class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
         } else if (desired == null || desired != instances.size()) {
           splainer.add(
               "short-circuiting out of WaitForCapacityMatchTask because expected and current capacity don't match");
-          return false;
-        }
-      } else {
-        splainer.add(
-            "checking if capacity matches (desired=${desired}, instances.size()=${instances.size()}) ");
-        if (desired == null || desired != instances.size()) {
-          splainer.add(
-              "short-circuiting out of WaitForCapacityMatchTask because expected and current capacity don't match}");
           return false;
         }
       }

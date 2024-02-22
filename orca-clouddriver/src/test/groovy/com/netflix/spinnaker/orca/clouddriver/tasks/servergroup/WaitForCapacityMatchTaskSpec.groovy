@@ -30,7 +30,7 @@ import spock.lang.Unroll
 class WaitForCapacityMatchTaskSpec extends Specification {
 
   CloudDriverService cloudDriverService = Mock()
-  @Subject WaitForCapacityMatchTask task = new WaitForCapacityMatchTask(new ResizeServerGroupProperties()) {
+  @Subject WaitForCapacityMatchTask task = new WaitForCapacityMatchTask(new ServerGroupProperties()) {
     @Override
     void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
@@ -266,9 +266,11 @@ class WaitForCapacityMatchTaskSpec extends Specification {
 
   @Unroll
   void 'should use number of instances when determining if scaling has succeeded even if targetHealthyDeployPercentage is defined'() {
-    def properties = new ResizeServerGroupProperties()
-    properties.setUseTargetDesiredSize(false)
-    WaitForCapacityMatchTask task = new WaitForCapacityMatchTask(properties) {
+    def serverGroupProperties = new ServerGroupProperties()
+    def resize = new ServerGroupProperties.Resize()
+    resize.setMatchInstancesSize(true)
+    serverGroupProperties.setResize(resize)
+    WaitForCapacityMatchTask task = new WaitForCapacityMatchTask(serverGroupProperties) {
       @Override
       void verifyServerGroupsExist(StageExecution stage) {
         // do nothing
