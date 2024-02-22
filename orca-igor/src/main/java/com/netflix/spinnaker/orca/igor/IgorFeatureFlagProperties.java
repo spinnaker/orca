@@ -16,10 +16,15 @@
 
 package com.netflix.spinnaker.orca.igor;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "feature.igor")
 public class IgorFeatureFlagProperties {
+<<<<<<< HEAD
   private boolean jobNameAsQueryParameter = false;
 
   public boolean isJobNameAsQueryParameter() {
@@ -29,4 +34,7 @@ public class IgorFeatureFlagProperties {
   public void setJobNameAsQueryParameter(boolean jobNameAsQueryParameter) {
     this.jobNameAsQueryParameter = jobNameAsQueryParameter;
   }
+=======
+  private boolean jobNameAsQueryParameter = true;
+>>>>>>> 13c6f6ebf (feat(jenkins): Enable Jenkins job triggers for jobs in sub-folders (#4618))
 }
