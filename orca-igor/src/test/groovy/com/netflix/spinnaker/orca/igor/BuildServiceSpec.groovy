@@ -64,6 +64,18 @@ class BuildServiceSpec extends Specification {
     1 * igorService.getBuildWithJobAsQueryParam(BUILD_NUMBER, MASTER, JOB_NAME_ENCODED)
   }
 
+  void 'getPropertyFile method with job in query when flag is true'() {
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
+
+    when:
+    buildService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME)
+
+    then:
+    1 * igorService.getPropertyFileWithJobAsQueryParam(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME_ENCODED)
+  }
+
   void 'getPropertyFile method encodes the job name'() {
     when:
     buildService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME)
@@ -93,4 +105,5 @@ class BuildServiceSpec extends Specification {
     then:
     1 * igorService.stopWithJobNameAsQueryParameter(MASTER, JOB_NAME, QUEUED_BUILD, BUILD_NUMBER, '')
   }
+
 }
