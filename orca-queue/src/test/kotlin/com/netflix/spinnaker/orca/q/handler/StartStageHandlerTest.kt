@@ -80,7 +80,6 @@ import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.spy
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
-import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import com.nhaarman.mockito_kotlin.whenever
 import java.time.Duration
 import org.assertj.core.api.Assertions.assertThat
@@ -473,7 +472,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("does not publish an event") {
-          verifyZeroInteractions(publisher)
+          verifyNoMoreInteractions(publisher)
         }
 
         it("re-queues the message with a delay") {
@@ -517,7 +516,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("publishes no events") {
-          verifyZeroInteractions(publisher)
+          verifyNoMoreInteractions(publisher)
         }
 
         it("completes the execution") {
@@ -541,11 +540,11 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("does not queue any messages") {
-          verifyZeroInteractions(queue)
+          verifyNoMoreInteractions(queue)
         }
 
         it("does not publish any events") {
-          verifyZeroInteractions(publisher)
+          verifyNoMoreInteractions(publisher)
         }
       }
     }
@@ -591,6 +590,44 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
             }
           )
           verifyNoMoreInteractions(queue)
+        }
+      }
+
+      and("the stage has a stage type alias") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            refId = "1"
+            type = "bar"
+            context["restrictExecutionDuringTimeWindow"] = true
+            context["stageTimeoutMs"] = "3"
+            context["anotherContext"] = "foo2"
+            context["alias"] = webhookStage.type
+          }
+        }
+        val message = StartStage(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id)
+
+        beforeGroup {
+          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving a message") {
+          subject.handle(message)
+        }
+
+        it("copies parent's context to RestrictExecutionDuringTimeWindow context except some") {
+          argumentCaptor<StageExecution>().apply {
+            verify(repository, times(1)).addStage(capture())
+            assertSoftly {
+              assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
+              assertThat(firstValue.parentStageId).isEqualTo(message.stageId)
+              assertThat(firstValue.syntheticStageOwner).isEqualTo(STAGE_BEFORE)
+              assertThat(firstValue.context.size).isEqualTo(1)
+              assertThat(firstValue.context["anotherContext"]).isEqualTo("foo2")
+            }
+          }
         }
       }
 

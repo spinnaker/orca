@@ -228,6 +228,8 @@ class RunTaskHandler(
                 }
                 val status = stage.failureStatus(default = TERMINAL)
                 stage.context["exception"] = exceptionDetails
+                //Adding here serves two purposes one to display taskwise failures,other to display the exact failure when continue pipeline is set to true
+                taskModel.taskExceptionDetails["exception"] = exceptionDetails
                 repository.storeStage(stage)
                 queue.push(CompleteTask(message, status, TERMINAL))
                 trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
@@ -350,7 +352,7 @@ class RunTaskHandler(
       }
     }
 
-    return backOffs.max() ?: dynamicBackOffPeriod
+    return backOffs.maxOrNull() ?: dynamicBackOffPeriod
   }
 
   private fun List<TaskExecutionInterceptor>.maxBackoff(): Long =

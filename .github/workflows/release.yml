@@ -14,7 +14,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       # Given a tag, determine what branch we are on, so we can bump dependencies in the correct branch
@@ -38,12 +38,14 @@ jobs:
           echo "exactly one branch ($BRANCHES)"
           echo BRANCH=$BRANCHES >> $GITHUB_ENV
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - uses: actions/setup-java@v3
+        uses: docker/setup-buildx-action@v3
+      - uses: actions/setup-java@v4
         with:
-          java-version: 11
+          java-version: |
+            17
+            11
           distribution: 'zulu'
           cache: 'gradle'
       - name: Assemble release info
@@ -81,7 +83,7 @@ jobs:
       - name: Login to Google Cloud
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
-        uses: 'google-github-actions/auth@v1'
+        uses: 'google-github-actions/auth@v2'
         # use service account flow defined at: https://github.com/google-github-actions/upload-cloud-storage#authenticating-via-service-account-key-json
         with:
           credentials_json: '${{ secrets.GAR_JSON_KEY }}'
@@ -89,7 +91,7 @@ jobs:
         # https://console.cloud.google.com/storage/browser/halconfig
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
-        uses: 'google-github-actions/upload-cloud-storage@v1'
+        uses: 'google-github-actions/upload-cloud-storage@v2'
         with:
           path: 'halconfig/'
           destination: 'halconfig/${{ steps.build_variables.outputs.REPO }}/${{ steps.release_info.outputs.RELEASE_VERSION }}'
@@ -97,7 +99,7 @@ jobs:
       - name: Login to GAR
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         # use service account flow defined at: https://github.com/docker/login-action#service-account-based-authentication-1
         with:
           registry: us-docker.pkg.dev
@@ -106,7 +108,7 @@ jobs:
       - name: Build and publish slim container image
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.slim
@@ -119,7 +121,7 @@ jobs:
       - name: Build and publish ubuntu container image
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile.ubuntu
@@ -128,6 +130,31 @@ jobs:
           tags: |
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated-ubuntu"
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ steps.build_variables.outputs.VERSION }}-unvalidated-ubuntu"
+      - name: Build and publish slim JRE 11 container image
+        # Only run this on repositories in the 'spinnaker' org, not on forks.
+        if: startsWith(github.repository, 'spinnaker/')
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.java11.slim
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-java11-unvalidated"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-java11-unvalidated-slim"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ steps.build_variables.outputs.VERSION }}-java11-unvalidated-slim"
+      - name: Build and publish ubuntu JRE 11 container image
+        # Only run this on repositories in the 'spinnaker' org, not on forks.
+        if: startsWith(github.repository, 'spinnaker/')
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.java11.ubuntu
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-java11-unvalidated-ubuntu"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ steps.build_variables.outputs.VERSION }}-java11-unvalidated-ubuntu"
       - name: Create release
         if: steps.release_info.outputs.SKIP_RELEASE == 'false'
         uses: softprops/action-gh-release@v1
@@ -142,7 +169,7 @@ jobs:
       - name: Pause before dependency bump
         run: sleep 900
       - name: Trigger dependency bump workflow
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.SPINNAKER_GITHUB_TOKEN }}
           event-type: bump-dependencies

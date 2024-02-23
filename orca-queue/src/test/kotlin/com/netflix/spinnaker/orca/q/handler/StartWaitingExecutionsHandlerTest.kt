@@ -34,7 +34,6 @@ import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
-import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import com.nhaarman.mockito_kotlin.whenever
 import java.time.Instant.now
 import java.util.Random
@@ -76,7 +75,7 @@ object StartWaitingExecutionsHandlerTest : SubjectSpek<StartWaitingExecutionsHan
       }
 
       it("does nothing") {
-        verifyZeroInteractions(queue)
+        verifyNoMoreInteractions(queue)
       }
     }
 
@@ -133,8 +132,8 @@ object StartWaitingExecutionsHandlerTest : SubjectSpek<StartWaitingExecutionsHan
           }
         }
       }
-      val oldest = waitingPipelines.minBy { it.buildTime!! }!!
-      val newest = waitingPipelines.maxBy { it.buildTime!! }!!
+      val oldest = waitingPipelines.minByOrNull { it.buildTime!! }!!
+      val newest = waitingPipelines.maxByOrNull { it.buildTime!! }!!
 
       given("the queue should not be purged") {
         beforeGroup {
