@@ -40,6 +40,13 @@ class SqlQueueProperties {
   var ackTimeout: Duration = Duration.ofMinutes(2)
 
   /**
+   * When set to true, the number of ack attempts in the message metadata will be reset to 0
+   * when the message is acked. This is to avoid having this count grow over time for long-lived
+   * messages that risk being dropped when the max attempts is reached.
+   */
+  var resetAttemptsOnAck: Boolean = true
+
+  /**
    * The length of time in seconds that a message with a locked set on the queue table has to
    * be moved to the unacked table, signifying that it is actively being processed. Messages
    * that are not moved from queued to unacked in [lockTtlSeconds] will have the lock released.
