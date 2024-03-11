@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.keel.task
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
@@ -37,7 +39,6 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 
 /**
  * Task that retrieves a Managed Delivery config manifest from source control via igor, then publishes it to keel,
@@ -75,7 +76,7 @@ constructor(
       keelService.publishDeliveryConfig(deliveryConfig)
 
       TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
-    } catch (e: RetrofitError) {
+    } catch (e: SpinnakerServerException) {
       handleRetryableFailures(e, context)
     } catch (e: Exception) {
       log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
@@ -153,35 +154,56 @@ constructor(
       ?: ""}/${context.manifest}@${context.ref}"
   }
 
-  /**
-   * Handle (potentially) retryable failures by looking at the retrofit error type or HTTP status code. A few 40x errors
-   * are handled as special cases to provide more friendly error messages to the UI.
-   */
-  private fun handleRetryableFailures(error: RetrofitError, context: ImportDeliveryConfigContext): TaskResult {
+  /*
+  * Handle (potentially) all Spinnaker*Exception. Smart casts to the respective type on Http error and/or Network error.
+  * @return default error message on non-http and non-network errors.
+  * */
+  private fun handleRetryableFailures(error: SpinnakerServerException, context: ImportDeliveryConfigContext): TaskResult {
     return when {
-      error.kind == RetrofitError.Kind.NETWORK -> {
+      error is SpinnakerNetworkException -> {
         // retry if unable to connect
         buildRetry(
           context,
-          "Network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${error.friendlyMessage}"
+          "Network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${error.networkErrorMessage}"
         )
       }
-      error.response?.status in 400..499 -> {
-        val response = error.response!!
+      error is SpinnakerHttpException -> {
+        handleRetryableFailures(error, context)
+      } else -> {
+        buildRetry(
+          context,
+          "Server error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${error.serverErrorMessage}"
+        )
+      }
+    }
+  }
+
+  /**
+   * Handle (potentially) retryable failures by looking at the HTTP status code. A few 4xx errors
+   * are handled as special cases to provide more friendly error messages to the UI.
+   */
+  private fun handleRetryableFailures(httpException: SpinnakerHttpException, context: ImportDeliveryConfigContext): TaskResult{
+    return when {
+      httpException.responseCode in 400..499 -> {
+        val responseBody = httpException.responseBody
         // just give up on 4xx errors, which are unlikely to resolve with retries, but give users a hint about 401
         // errors from igor/scm, and attempt to parse keel errors (which are typically more informative)
         buildError(
-          if (error.fromIgor && response.status == 401) {
+          if (httpException.fromIgor && httpException.responseCode == 401) {
             UNAUTHORIZED_SCM_ACCESS_MESSAGE
-          } else if (error.fromKeel && response.body.length() > 0) {
-            // keel's errors should use the standard Spring format, so we try to parse them
+          } else if (httpException.fromKeel && responseBody!=null && responseBody.isNotEmpty()) {
+            // keel's errors should use the standard Spring format
             try {
-              objectMapper.readValue<SpringHttpError>(response.body.`in`())
+              if (responseBody["timestamp"] !=null) {
+                SpringHttpError(responseBody["error"] as String, responseBody["status"] as Int, responseBody["message"] as? String, Instant.ofEpochMilli(responseBody["timestamp"] as Long), responseBody["details"] as? Map<String, Any?>)
+              } else {
+                SpringHttpError(error = responseBody["error"] as String, status = responseBody["status"] as Int, message = responseBody["message"] as? String, details = responseBody["details"] as? Map<String, Any?>)
+              }
             } catch (_: Exception) {
-              "Non-retryable HTTP response ${error.response?.status} received from downstream service: ${error.friendlyMessage}"
+              "Non-retryable HTTP response ${httpException.responseCode} received from downstream service: ${httpException.httpErrorMessage}"
             }
           } else {
-            "Non-retryable HTTP response ${error.response?.status} received from downstream service: ${error.friendlyMessage}"
+            "Non-retryable HTTP response ${httpException.responseCode} received from downstream service: ${httpException.httpErrorMessage}"
           }
         )
       }
@@ -189,7 +211,7 @@ constructor(
         // retry on other status codes
         buildRetry(
           context,
-          "Retryable HTTP response ${error.response?.status} received from downstream service: ${error.friendlyMessage}"
+          "Retryable HTTP response ${httpException.responseCode} received from downstream service: ${httpException.httpErrorMessage}"
         )
       }
     }
@@ -233,20 +255,28 @@ constructor(
 
   override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
 
-  val RetrofitError.friendlyMessage: String
-    get() = if (kind == RetrofitError.Kind.HTTP) {
-      "HTTP ${response.status} ${response.url}: ${cause?.message ?: message}"
-    } else {
-      "$message: ${cause?.message ?: ""}"
+  val SpinnakerHttpException.httpErrorMessage: String
+    get() {
+      return "HTTP ${responseCode} ${url}: ${cause?.message ?: message}"
     }
 
-  val RetrofitError.fromIgor: Boolean
+  val SpinnakerNetworkException.networkErrorMessage: String
+    get() {
+      return "$message: ${cause?.message ?: ""}"
+    }
+
+  val SpinnakerServerException.serverErrorMessage: String
+    get() {
+      return "$message"
+    }
+
+  val SpinnakerServerException.fromIgor: Boolean
     get() {
       val parsedUrl = URL(url)
       return parsedUrl.host.contains("igor") || parsedUrl.port == 8085
     }
 
-  val RetrofitError.fromKeel: Boolean
+  val SpinnakerServerException.fromKeel: Boolean
     get() {
       val parsedUrl = URL(url)
       return parsedUrl.host.contains("keel") || parsedUrl.port == 8087
@@ -271,7 +301,7 @@ constructor(
     val error: String,
     val status: Int,
     val message: String? = error,
-    val timestamp: Instant = Instant.now(),
+    val timestamp: Instant? = Instant.now(),
     val details: Map<String, Any?>? = null // this is keel-specific
   )
 
