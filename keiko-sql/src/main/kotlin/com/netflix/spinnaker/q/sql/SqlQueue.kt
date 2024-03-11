@@ -186,8 +186,7 @@ class SqlQueue(
     }
   }
 
-  private fun doContainsMessage(predicate: (Message) -> Boolean): Boolean {
-    val batchSize = 100
+  fun doContainsMessage(predicate: (Message) -> Boolean, batchSize: Int = 100): Boolean {
     var found = false
     var lastId = "0"
 
@@ -201,7 +200,7 @@ class SqlQueue(
           .intoResultSet()
       }
 
-      while (!found && rs.next()) {
+      while (!found && rs.row < batchSize && rs.next()) {
         try {
           found = predicate.invoke(mapper.readValue(rs.getString("body")))
         } catch (e: Exception) {
