@@ -27,6 +27,7 @@ import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.mine.MineService;
 import com.netflix.spinnaker.orca.mine.pipeline.DeployCanaryStage;
@@ -75,6 +76,7 @@ public class RegisterCanaryTaskTest {
             .setEndpoint(wmRuntimeInfo.getHttpBaseUrl())
             .setClient(okClient)
             .setLogLevel(retrofitLogLevel)
+            .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
             .setLog(new RetrofitSlf4jLog(MineService.class))
             .setConverter(new JacksonConverter(objectMapper))
             .build()
