@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -108,6 +109,10 @@ public class RegisterCanaryTaskTest {
                     .withBody(body)));
   }
 
+  private static void simulateFault(String url, Fault fault) {
+    wireMock.givenThat(WireMock.post(urlPathEqualTo(url)).willReturn(aResponse().withFault(fault)));
+  }
+
   @Test
   public void verifyRegisterCanaryThrowsHttpError() throws Exception {
 
@@ -151,6 +156,38 @@ public class RegisterCanaryTaskTest {
         .hasMessageContaining("errorKind:HTTP")
         .hasMessageContaining("url:" + url)
         .hasMessageContaining("status:" + HttpStatus.NOT_ACCEPTABLE.value());
+  }
+
+  @Test
+  public void verifyRegisterCanaryThrowsNetworkError() {
+
+    // simulate network error
+    simulateFault("/registerCanary", Fault.CONNECTION_RESET_BY_PEER);
+
+    var canaryObject = (LinkedHashMap) deployCanaryStage.getContext().get("canary");
+    canaryObject.put("application", "foo");
+
+    var canaryConfig = (LinkedHashMap) canaryObject.get("canaryConfig");
+    canaryConfig.put("name", deployCanaryStage.getExecution().getId());
+    canaryConfig.put("application", "foo");
+
+    // Format the canary data as per error log message
+    var canary =
+        Objects.toString(deployCanaryStage.getContext().get("canary"))
+            .replace("{", "[")
+            .replace("}", "]")
+            .replace("=", ":");
+
+    String errorResponseBody = "[status:null, errorKind:NETWORK]";
+
+    assertThatThrownBy(() -> registerCanaryTask.execute(deployCanaryStage))
+        .hasMessage(
+            String.format(
+                "Unable to register canary (executionId: %s, stageId: %s canary: %s), response: %s",
+                deployCanaryStage.getExecution().getId(),
+                deployCanaryStage.getId(),
+                canary,
+                errorResponseBody));
   }
 
   /*
