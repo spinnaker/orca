@@ -62,7 +62,8 @@ class RegisterCanaryTask implements Task {
     } catch (RetrofitError re) {
       def response = [:]
       try {
-        response = re.getBodyAs(Map) as Map
+        def responseBody = re.getBodyAs(Map) as Map
+        response = responseBody!=null ? responseBody : response
       } catch (Exception e) {
         response.error = e.message
       }
