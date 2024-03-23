@@ -45,6 +45,9 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   @Value("${stages.pipeline.defaultSkipDownstreamOutput:false}")
   private boolean defaultSkipDownstreamOutput;
 
+  @Value("${stages.pipeline.defaultIsolatedStreamExecution:false}")
+  private boolean defaultIsolatedStreamExecution;
+
   public static final String PIPELINE_CONFIG_TYPE =
       StageDefinitionBuilder.getType(PipelineStage.class);
 
@@ -59,6 +62,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     // only start the pipeline if no execution ID already exists
     if (stage.getContext().get("executionId") == null) {
+      stage.getContext().putIfAbsent("isolatedStreamExecution", defaultIsolatedStreamExecution);
       builder.withTask("startPipeline", StartPipelineTask.class);
     }
 

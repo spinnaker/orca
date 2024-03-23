@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
-
 import com.netflix.spinnaker.orca.api.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import spock.lang.Specification
 import spock.lang.Subject
@@ -111,4 +111,53 @@ class StartPipelineTaskSpec extends Specification {
     )              || "authenticated_user"       || ["account1"]
 
   }
+
+  @Unroll
+  def "should trigger the dependent pipeline with isolatedStreamExecution"() {
+    given:
+    def pipelineConfig = [id: "testStrategyId", application: "orca", name: "testStrategy", other: "other"]
+
+    1 * front50Service.getStrategies(_) >> [pipelineConfig]
+    def stage = stage {
+      type = "whatever"
+      name = "testing"
+      context = [
+          pipelineId             : "testStrategyId",
+          pipelineParameters     : [
+              strategy: true,
+              zone    : "north-pole-1",
+          ],
+          isolatedStreamExecution: isIsolatedStreamExecution
+      ]
+    }
+
+    stage.getExecution().getStages().add(new StageExecutionImpl(stage.getExecution(), "stage2"))
+    stage.getExecution().getStages().add(new StageExecutionImpl(stage.getExecution(), "stage3"))
+    def parentPipelineStageId
+    def pipelineExecution
+
+    when:
+    def result = task.execute(stage)
+
+    then:
+    dependentPipelineStarter.trigger(*_) >> {
+      pipelineExecution = it[2]
+      parentPipelineStageId = it[4]
+
+      return pipeline {
+        id = "testPipelineId"
+        application = "orca"
+      }
+    }
+
+    parentPipelineStageId == stage.id
+    stagesNumber == pipelineExecution.getStages().size()
+
+    where:
+    isIsolatedStreamExecution || stagesNumber
+    false           || 3
+    true            || 1
+
+  }
+
 }
