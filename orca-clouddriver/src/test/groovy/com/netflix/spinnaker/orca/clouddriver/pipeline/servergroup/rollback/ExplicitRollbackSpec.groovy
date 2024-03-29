@@ -42,6 +42,7 @@ class ExplicitRollbackSpec extends Specification {
   def captureSourceServerGroupCapacityStage = new CaptureSourceServerGroupCapacityStage()
   def applySourceServerGroupCapacityStage = new ApplySourceServerGroupCapacityStage()
   def waitStage = new WaitStage()
+
   CloudDriverService cloudDriverService = Mock()
 
   def stage = stage {
@@ -61,13 +62,14 @@ class ExplicitRollbackSpec extends Specification {
     captureSourceServerGroupCapacityStage: captureSourceServerGroupCapacityStage,
     applySourceServerGroupCapacityStage: applySourceServerGroupCapacityStage,
     waitStage: waitStage,
-    cloudDriverService: cloudDriverService
+    cloudDriverService: cloudDriverService,
   )
 
   def setup() {
     rollback.rollbackServerGroupName = rollbackServerGroupName
     rollback.restoreServerGroupName = restoreServerGroupName
     rollback.targetHealthyRollbackPercentage = 95
+    rollback.rollbackTimeout = 5
   }
 
   def serverGroup(String name, int desired, Integer min = null, Integer max = null) {
@@ -213,4 +215,5 @@ class ExplicitRollbackSpec extends Specification {
     1 * cloudDriverService.getTargetServerGroup(_, rollbackServerGroupName, _) >> { throw new Exception(":(") }
     thrown(SpinnakerException)
   }
+
 }
