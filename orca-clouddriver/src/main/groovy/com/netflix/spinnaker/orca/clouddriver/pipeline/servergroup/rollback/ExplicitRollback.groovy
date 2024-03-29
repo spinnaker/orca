@@ -34,6 +34,7 @@ import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 
 import javax.annotation.Nullable
 import java.util.concurrent.Callable
@@ -48,6 +49,8 @@ class ExplicitRollback implements Rollback {
   Integer delayBeforeDisableSeconds
   Boolean disableOnly
   Boolean enableAndDisableOnly
+
+  @Value('${rollback.explicitRollback.timeout:5}') Integer rollbackTimeout
 
   @JsonIgnore
   private final ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -163,11 +166,11 @@ class ExplicitRollback implements Rollback {
       })
 
       executor.submit(authenticatedRequest)
-        .get(5, TimeUnit.SECONDS)
+        .get(rollbackTimeout, TimeUnit.SECONDS)
         .get()  // not sure what would cause the Optional to not be present but we would catch and log it
     } catch(Exception e) {
       log.error('Could not generate resize stage because there was an error looking up {}', serverGroupName, e)
-      throw new SpinnakerException("failed to look up ${serverGroupName}", e)
+      throw new SpinnakerException("Failed Clouddriver look up for ${serverGroupName} in ${rollbackTimeout} sec. Consider increasing rollback.explicitRollback.timeout in orca profile.", e)
     }
   }
 
