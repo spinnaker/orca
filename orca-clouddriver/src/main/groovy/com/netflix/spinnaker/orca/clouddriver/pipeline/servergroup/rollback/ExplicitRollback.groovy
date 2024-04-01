@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
+import com.netflix.spinnaker.orca.clouddriver.config.RollbackConfigurationProperties
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ApplySourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
@@ -50,7 +51,8 @@ class ExplicitRollback implements Rollback {
   Boolean disableOnly
   Boolean enableAndDisableOnly
 
-  @Value('${rollback.explicitRollback.timeout:5}') Integer rollbackTimeout
+  @Autowired
+  RollbackConfigurationProperties rollbackConfigurationProperties;
 
   @JsonIgnore
   private final ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -152,6 +154,7 @@ class ExplicitRollback implements Rollback {
 
   @Nullable TargetServerGroup lookupServerGroup(StageExecution parentStage, String serverGroupName) {
     def fromContext = parentStage.mapTo(ResizeStrategy.Source)
+    def rollbackTimeout = rollbackConfigurationProperties.explicitRollback.getTimeout()
 
     try {
       // we use an executor+future to timebox how long we can spend in this remote call
