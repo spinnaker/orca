@@ -52,6 +52,7 @@ class ExplicitRollback implements Rollback {
   Boolean enableAndDisableOnly
 
   @Autowired
+  @JsonIgnore
   RollbackConfigurationProperties rollbackConfigurationProperties;
 
   @JsonIgnore
