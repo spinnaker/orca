@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.KeelService
 import groovy.util.logging.Slf4j
 import org.springframework.lang.Nullable
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 
 @Slf4j
 @Component
@@ -92,12 +91,6 @@ class DeleteApplicationTask extends AbstractFront50Task {
           keelService.deleteDeliveryConfig(application.name)
         }
       }
-    } catch (RetrofitError e) {
-      if (e.response?.status == 404) {
-        return TaskResult.SUCCEEDED
-      }
-      log.error("Could not delete application", e)
-      return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
     } catch (SpinnakerHttpException httpException){
       if (httpException.responseCode == 404) {
         return TaskResult.SUCCEEDED
