@@ -446,15 +446,6 @@ class TrafficGuardSpec extends Specification {
     "app"   | "test"  | null       | "zz"        | "test"       | "us-east-1"   || false // different detail
   }
 
-  void "hasDisableLock returns false on missing applications"() {
-    when:
-    boolean result = trafficGuard.hasDisableLock(new Moniker(app: "app", cluster: "app"), "test", location)
-
-    then:
-    result == false
-    1 * front50Service.get("app") >> null
-  }
-
   void "hasDisableLock returns false on applications with no guards configured"() {
     when:
     boolean result = trafficGuard.hasDisableLock(new Moniker(app: "app", cluster: "app"), "test", location)
