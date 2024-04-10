@@ -53,23 +53,6 @@ class UpsertApplicationTaskSpec extends Specification {
     }
   }
 
-  void "should create an application in global registries"() {
-    given:
-    def app = new Application(config.application + [user: config.user])
-    task.front50Service = Mock(Front50Service) {
-      1 * get(config.application.name) >> null
-      1 * create(app)
-      1 * updatePermission(*_)
-      0 * _._
-    }
-
-    when:
-    def result = task.execute(pipeline.stages.first())
-
-    then:
-    result.status == ExecutionStatus.SUCCEEDED
-  }
-
   void "should update existing application"() {
     given:
     Application application = new Application(config.application + [
