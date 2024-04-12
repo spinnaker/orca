@@ -660,7 +660,7 @@ class SqlExecutionRepository(
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
     withPool(poolName) {
-      val select = jooq.select()
+      val select = jooq.select(selectFields())
         .from(PIPELINE.tableName)
         .join(
           jooq.selectExecutions(
