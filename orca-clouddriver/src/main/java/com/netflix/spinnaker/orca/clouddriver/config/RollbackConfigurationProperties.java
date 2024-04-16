@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.config;
 
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -61,6 +62,16 @@ public class RollbackConfigurationProperties {
   @NoArgsConstructor
   public static class DynamicRollback {
     private boolean enabled = false;
+  }
+
+  private long timeoutMillis = TimeUnit.MINUTES.toMillis(5); // Default timeout
+
+  public long getTimeoutMillis() {
+    return timeoutMillis;
+  }
+
+  public void setTimeoutMillis(long timeoutMillis) {
+    this.timeoutMillis = timeoutMillis;
   }
 
   public boolean isDynamicRollbackEnabled() {

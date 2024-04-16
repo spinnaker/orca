@@ -86,6 +86,8 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   private final CloudDriverService cloudDriverService;
   private final PreviousImageRollbackSupport previousImageRollbackSupport;
 
+  private final RollbackConfigurationProperties rollbackConfigurationProperties;
+
   @Autowired
   public DetermineRollbackCandidatesTask(
       ObjectMapper objectMapper,
@@ -99,6 +101,7 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
         new PreviousImageRollbackSupport(
             objectMapper, cloudDriverService, featuresService, retrySupport);
     this.dynamicRollbackTimeoutEnabled = rollbackConfigurationProperties.isDynamicRollbackEnabled();
+    this.rollbackConfigurationProperties = rollbackConfigurationProperties;
   }
 
   @Override
@@ -106,9 +109,8 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
     return TimeUnit.SECONDS.toMillis(15);
   }
 
-  @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+    return rollbackConfigurationProperties.getTimeoutMillis();
   }
 
   public long getDynamicTimeout(StageExecution stage) {
