@@ -19,9 +19,12 @@ package com.netflix.spinnaker.orca.applications.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
+import retrofit.RetrofitError
+import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -53,6 +56,23 @@ class UpsertApplicationTaskSpec extends Specification {
     }
   }
 
+  void "should create an application in global registries"() {
+    given:
+    def app = new Application(config.application + [user: config.user])
+    task.front50Service = Mock(Front50Service) {
+      1 * get(config.application.name) >> { throw notFoundError() }
+      1 * create(app)
+      1 * updatePermission(*_)
+      0 * _._
+    }
+
+    when:
+    def result = task.execute(pipeline.stages.first())
+
+    then:
+    result.status == ExecutionStatus.SUCCEEDED
+  }
+
   void "should update existing application"() {
     given:
     Application application = new Application(config.application + [
@@ -82,7 +102,11 @@ class UpsertApplicationTaskSpec extends Specification {
     application.user = config.user
 
     task.front50Service = Mock(Front50Service) {
-      1 * get(config.application.name) >> initialState
+      if (initialState == null) {
+        1 * get(config.application.name) >> { throw notFoundError() }
+      } else {
+        1 * get(config.application.name) >> initialState
+      }
       1 * "${operation}"(*_)
       _ * updatePermission(*_)
       0 * _._
@@ -132,5 +156,14 @@ class UpsertApplicationTaskSpec extends Specification {
     null                                                        || 0
     [:]                                                         || 1
     [READ: ["google@google.com"], WRITE: ["google@google.com"]] || 1
+  }
+
+  private static SpinnakerHttpException notFoundError() {
+    return new SpinnakerHttpException(RetrofitError.httpError(
+      "http://front50",
+      new Response("http://front50", 404, "Not Found", [], null),
+      null,
+      null
+    ))
   }
 }
