@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.strategy;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,9 +28,9 @@ import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler;
 import com.netflix.spinnaker.okhttp.SpinnakerRequestInterceptor;
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Cluster;
@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,15 +136,12 @@ public class DetermineSourceServerGroupTaskTest {
         objectMapper.writeValueAsString(serverGroup),
         HttpStatus.FORBIDDEN);
 
-    var result = determineSourceServerGroupTask.execute(stage);
-
-    assertThat(Optional.of(result.getStatus())).isEqualTo(Optional.of(ExecutionStatus.RUNNING));
-    assertThat((String) result.getContext().get("lastException"))
-        .contains(
+    assertThatThrownBy(() -> determineSourceServerGroupTask.execute(stage))
+        .isExactlyInstanceOf(SpinnakerHttpException.class)
+        .hasMessage(
             "Status: 403, URL: http://localhost:"
                 + wireMock.getPort()
                 + "/applications/testCluster/clusters/test/testCluster/aws/us-east-1/serverGroups/target/ancestor_asg_dynamic, Message: Forbidden");
-    assertThat((Integer) result.getContext().get("attempt")).isEqualTo(2);
   }
 
   private @NotNull Cluster createCluster(ServerGroup serverGroup) {
