@@ -148,7 +148,7 @@ class RunTaskHandlerExceptionHandlerTest {
       new SpinnakerServerExceptionHandler();
   private DefaultExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler();
 
-  /** Put RetrofitExceptionHandler first since its bean is marked as highest precedence */
+  /** Put SpinnakerServerExceptionHandler first since its bean is marked as highest precedence */
   private List<ExceptionHandler> exceptionHandlers =
       List.of(spinnakerServerExceptionHandler, defaultExceptionHandler);
 
@@ -350,8 +350,8 @@ class RunTaskHandlerExceptionHandlerTest {
     // verify that exception handling has populated the stage context as
     // expected.  There's no implementation for this yet in
     // SpinnakerServerExceptionHandler since SpinnakerHttpException can't handle
-    // non-json responses yet.  The expected details here matches the current
-    // behavior of RetrofitExceptionHandler.
+    // non-json responses yet.  The expected details here match the behavior of
+    // RetrofitExceptionHandler, when it existed.
     Map<String, Object> responseDetails =
         Map.of(
             "error", spinnakerHttpException.getReason(),

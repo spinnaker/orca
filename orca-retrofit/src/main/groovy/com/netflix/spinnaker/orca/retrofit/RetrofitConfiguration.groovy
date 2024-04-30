@@ -100,9 +100,7 @@ class RetrofitConfiguration {
 
   /**
    * Set the order such that this has higher precedence than the
-   * DefaultExceptionHandler bean.  The order relative to the
-   * RetrofitExceptionHandler bean isn't important since they handle different
-   * types.
+   * DefaultExceptionHandler bean.
    */
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)
