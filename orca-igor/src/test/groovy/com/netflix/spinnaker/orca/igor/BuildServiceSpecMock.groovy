@@ -26,7 +26,13 @@ import retrofit.converter.JacksonConverter
 import spock.lang.Specification
 import spock.lang.Subject
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*
+import static com.github.tomakehurst.wiremock.client.WireMock.configureFor
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import static com.github.tomakehurst.wiremock.client.WireMock.get
+import static com.github.tomakehurst.wiremock.client.WireMock.put
 import static retrofit.Endpoints.newFixedEndpoint
 
 
