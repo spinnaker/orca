@@ -22,15 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
-import com.netflix.spinnaker.orca.pipeline.model.ArtifactoryTrigger
-import com.netflix.spinnaker.orca.pipeline.model.ConcourseTrigger
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.NexusTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PluginTrigger
+import com.netflix.spinnaker.orca.pipeline.model.*
 
 class TriggerDeserializer :
   StdDeserializer<Trigger>(Trigger::class.java) {
@@ -168,6 +160,18 @@ class TriggerDeserializer :
           // with the rest of this conditional
           customTriggerSuppliers.first { it.predicate.invoke(this) }.deserializer.invoke(this)
         }
+        looksLikePipelineRef() -> PipelineRefTrigger(
+          correlationId = get("correlationId")?.textValue(),
+          user = get("user")?.textValue(),
+          parameters = get("parameters")?.mapValue(parser) ?: mutableMapOf(),
+          artifacts = get("artifacts")?.listValue(parser) ?: mutableListOf(),
+          notifications = get("notifications")?.listValue(parser) ?: mutableListOf(),
+          isRebake = get("rebake")?.booleanValue() == true,
+          isDryRun = get("dryRun")?.booleanValue() == true,
+          isStrategy = get("strategy")?.booleanValue() == true,
+          parentExecutionId = get("parentExecutionId").textValue(),
+          parentPipelineStageId = get("parentPipelineStageId")?.textValue()
+        )
         else -> DefaultTrigger(
           get("type")?.textValue() ?: "none",
           get("correlationId")?.textValue(),
@@ -211,17 +215,6 @@ class TriggerDeserializer :
   private fun JsonNode.looksLikeCustom() =
     customTriggerSuppliers.any { it.predicate.invoke(this) }
 
-  private inline fun <reified E> JsonNode.listValue(parser: JsonParser): MutableList<E> =
-    this.map { parser.codec.treeToValue(it, E::class.java) }.toMutableList()
+  private fun JsonNode.looksLikePipelineRef() = get("type")?.textValue() == "pipelineRef"
 
-  private inline fun <reified V> JsonNode.mapValue(parser: JsonParser): MutableMap<String, V> {
-    val m = mutableMapOf<String, V>()
-    this.fields().asSequence().forEach { entry ->
-      m[entry.key] = parser.codec.treeToValue(entry.value, V::class.java)
-    }
-    return m
-  }
-
-  private inline fun <reified T> JsonNode.parseValue(parser: JsonParser): T =
-    parser.codec.treeToValue(this, T::class.java)
 }
