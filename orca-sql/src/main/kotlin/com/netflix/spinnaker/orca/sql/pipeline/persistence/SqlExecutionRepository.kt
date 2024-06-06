@@ -42,6 +42,8 @@ import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.RestartStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
+import com.netflix.spinnaker.orca.pipeline.model.PipelineRefTrigger
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -97,7 +99,8 @@ class SqlExecutionRepository(
   private val poolName: String = "default",
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
-  private val compressionProperties: ExecutionCompressionProperties
+  private val compressionProperties: ExecutionCompressionProperties,
+  private val pipelineRefEnabled: Boolean
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -389,7 +392,7 @@ class SqlExecutionRepository(
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
-        fields = selectFields() + field("status"),
+        fields = selectExecutionFields(compressionProperties) + field("status"),
         conditions = {
           if (partition.isNullOrEmpty()) {
             it.statusIn(criteria.statuses)
@@ -660,7 +663,7 @@ class SqlExecutionRepository(
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
     withPool(poolName) {
-      val select = jooq.select(selectFields())
+      val select = jooq.select(selectExecutionFields(compressionProperties))
         .from(PIPELINE.tableName)
         .join(
           jooq.selectExecutions(
@@ -781,6 +784,7 @@ class SqlExecutionRepository(
   private fun storeExecutionInternal(ctx: DSLContext, execution: PipelineExecution, storeStages: Boolean = false) {
     validateHandledPartitionOrThrow(execution)
 
+    val pipelineTrigger = mutatePipelineTrigger(execution)
     val stages = execution.stages.toMutableList().toList()
     execution.stages.clear()
 
@@ -869,7 +873,35 @@ class SqlExecutionRepository(
 
       // Restore original object state.
       execution.stages.addAll(stages)
+      pipelineTrigger?.let {
+        execution.trigger = it
+      }
     }
+  }
+
+  /**
+   * Converts a [PipelineTrigger] into a [PipelineRefTrigger] for storage.
+   *
+   * Returns the original [PipelineTrigger], if one exists.
+   */
+  private fun mutatePipelineTrigger(execution: PipelineExecution): PipelineTrigger? {
+    val pipelineTrigger = execution.trigger
+    if (!pipelineRefEnabled || pipelineTrigger !is PipelineTrigger) {
+      return null
+    }
+    execution.trigger = PipelineRefTrigger(
+      correlationId = pipelineTrigger.correlationId,
+      user = pipelineTrigger.user,
+      parameters = pipelineTrigger.parameters,
+      artifacts = pipelineTrigger.artifacts,
+      notifications = pipelineTrigger.notifications,
+      isRebake = pipelineTrigger.isRebake,
+      isDryRun = pipelineTrigger.isDryRun,
+      isStrategy = pipelineTrigger.isStrategy,
+      parentExecutionId = pipelineTrigger.parentExecution.id,
+      parentPipelineStageId = pipelineTrigger.parentPipelineStageId
+    )
+    return pipelineTrigger
   }
 
   private fun storeStageInternal(
@@ -1165,7 +1197,7 @@ class SqlExecutionRepository(
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(compressionProperties),
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
   ): SelectForUpdateStep<out Record> {
@@ -1182,7 +1214,7 @@ class SqlExecutionRepository(
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(compressionProperties),
     usingIndex: String,
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
@@ -1198,7 +1230,7 @@ class SqlExecutionRepository(
       .let { seek(it) }
   }
 
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()): SelectJoinStep<Record> {
+  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectExecutionFields(compressionProperties)): SelectJoinStep<Record> {
     val selectFrom = select(fields).from(type.tableName)
 
     if (compressionProperties.enabled) {
@@ -1208,24 +1240,8 @@ class SqlExecutionRepository(
     return selectFrom
   }
 
-  private fun selectFields(): List<Field<Any>> {
-    if (compressionProperties.enabled) {
-      return listOf(field("id"),
-        field("body"),
-        field("compressed_body"),
-        field("compression_type"),
-        field(name("partition"))
-      )
-    }
-
-    return listOf(field("id"),
-        field("body"),
-        field(name("partition"))
-    )
-  }
-
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize, compressionProperties).map(fetch().intoResultSet(), jooq)
+    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq)
 
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()

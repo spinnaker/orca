@@ -73,7 +73,8 @@ class SqlConfiguration {
     orcaSqlProperties: OrcaSqlProperties,
     interlink: Optional<Interlink>,
     executionRepositoryListeners: Collection<ExecutionRepositoryListener>,
-    compressionProperties: ExecutionCompressionProperties
+    compressionProperties: ExecutionCompressionProperties,
+    @Value("\${execution-repository.sql.pipeline-ref.enabled:false}") pipelineRefEnabled: Boolean
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -84,7 +85,8 @@ class SqlConfiguration {
       orcaSqlProperties.stageReadSize,
       interlink = interlink.orElse(null),
       executionRepositoryListeners = executionRepositoryListeners,
-      compressionProperties = compressionProperties
+      compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefEnabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
@@ -98,7 +100,8 @@ class SqlConfiguration {
     properties: SqlProperties,
     orcaSqlProperties: OrcaSqlProperties,
     @Value("\${execution-repository.sql.secondary.pool-name}") poolName: String,
-    compressionProperties: ExecutionCompressionProperties
+    compressionProperties: ExecutionCompressionProperties,
+    @Value("\${execution-repository.sql.pipeline-ref.enabled:false}") pipelineRefEnabled: Boolean
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -108,7 +111,8 @@ class SqlConfiguration {
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
       poolName,
-      compressionProperties = compressionProperties
+      compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefEnabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }
