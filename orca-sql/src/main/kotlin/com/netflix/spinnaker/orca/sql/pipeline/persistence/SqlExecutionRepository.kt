@@ -42,7 +42,6 @@ import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.RestartStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
-import com.netflix.spinnaker.orca.pipeline.model.PipelineRefTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

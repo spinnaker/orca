@@ -16,7 +16,6 @@
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.config.CompressionType
@@ -24,7 +23,6 @@ import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineRefTrigger
 import java.sql.ResultSet
 import org.jooq.DSLContext
 import org.jooq.impl.DSL.field

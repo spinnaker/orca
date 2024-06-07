@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2024 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.pipeline.model
+package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 
 /**
  * A trigger type used by SQL implementations to store a [PipelineTrigger] without embedding the entire parent

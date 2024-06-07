@@ -158,20 +158,8 @@ class TriggerDeserializer :
         looksLikeCustom() -> {
           // chooses the first custom deserializer to keep behavior consistent
           // with the rest of this conditional
-          customTriggerSuppliers.first { it.predicate.invoke(this) }.deserializer.invoke(this)
+          customTriggerSuppliers.first { it.predicate.invoke(this) }.deserializer.invoke(this, parser)
         }
-        looksLikePipelineRef() -> PipelineRefTrigger(
-          correlationId = get("correlationId")?.textValue(),
-          user = get("user")?.textValue(),
-          parameters = get("parameters")?.mapValue(parser) ?: mutableMapOf(),
-          artifacts = get("artifacts")?.listValue(parser) ?: mutableListOf(),
-          notifications = get("notifications")?.listValue(parser) ?: mutableListOf(),
-          isRebake = get("rebake")?.booleanValue() == true,
-          isDryRun = get("dryRun")?.booleanValue() == true,
-          isStrategy = get("strategy")?.booleanValue() == true,
-          parentExecutionId = get("parentExecutionId").textValue(),
-          parentPipelineStageId = get("parentPipelineStageId")?.textValue()
-        )
         else -> DefaultTrigger(
           get("type")?.textValue() ?: "none",
           get("correlationId")?.textValue(),
@@ -214,7 +202,5 @@ class TriggerDeserializer :
 
   private fun JsonNode.looksLikeCustom() =
     customTriggerSuppliers.any { it.predicate.invoke(this) }
-
-  private fun JsonNode.looksLikePipelineRef() = get("type")?.textValue() == "pipelineRef"
 
 }

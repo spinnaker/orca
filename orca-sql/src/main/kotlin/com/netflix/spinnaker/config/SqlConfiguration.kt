@@ -23,11 +23,15 @@ import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.lock.RunOnLockAcquired
 import com.netflix.spinnaker.orca.lock.RunOnShedLockAcquired
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.notifications.SqlNotificationClusterLock
+import com.netflix.spinnaker.orca.pipeline.model.support.CustomTriggerDeserializerSupplier
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
 import com.netflix.spinnaker.orca.sql.SpringLiquibaseProxy
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
@@ -48,6 +52,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.*
 import java.time.Clock
 import java.util.*
+import javax.annotation.PostConstruct
 import javax.sql.DataSource
 
 @Configuration
@@ -165,4 +170,13 @@ class SqlConfiguration {
   fun lockProvider(datasource: DataSource): LockProvider {
     return JdbcTemplateLockProvider(datasource)
   }
+
+  @Bean
+  @ConditionalOnProperty("execution-repository.sql.pipeline-ref.enabled")
+  fun pipelineRefTriggerDeserializer(@Qualifier("mapper") mapper: ObjectMapper): CustomTriggerDeserializerSupplier {
+    val customTrigger = PipelineRefTriggerDeserializerSupplier()
+    TriggerDeserializer.customTriggerSuppliers.add(PipelineRefTriggerDeserializerSupplier())
+    return customTrigger
+  }
+
 }
