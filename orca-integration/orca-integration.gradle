@@ -17,6 +17,8 @@ test.configure {
 }
 
 test {
+  useJUnitPlatform()
+
   // So stdout and stderr from the just-built container are available in CI
   testLogging.showStandardStreams = true
 
