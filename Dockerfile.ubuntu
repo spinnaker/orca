@@ -1,10 +1,6 @@
 FROM ubuntu:bionic
 LABEL maintainer="sig-platform@spinnaker.io"
-<<<<<<< HEAD
-RUN apt-get update && apt-get -y install openjdk-11-jre-headless wget
-=======
-RUN apt-get update && apt-get -y install curl openjdk-17-jre-headless wget
->>>>>>> b360ad588 (feat(build): add orca-integration module to exercise the just-built docker image (#4721))
+RUN apt-get update && apt-get -y install curl openjdk-11-jre-headless wget
 RUN adduser --system --uid 10111 --group spinnaker
 COPY orca-web/build/install/orca /opt/orca
 RUN mkdir -p /opt/orca/plugins && chown -R spinnaker:nogroup /opt/orca/plugins
