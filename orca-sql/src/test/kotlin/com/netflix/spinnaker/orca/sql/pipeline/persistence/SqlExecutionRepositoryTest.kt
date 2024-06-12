@@ -170,7 +170,40 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
       }
 
       test("store and retrieve with compression disabled") {
+        // SqlExecutionRepository.storeExecutionInternal serializes stages
+        // separately, so do the same here to calculate expected sizes
+        val beforeStages = pipelineExecution.stages.toList()
+        pipelineExecution.stages.clear()
+        val beforePipelineString = orcaObjectMapper.writeValueAsString(pipelineExecution)
+        pipelineExecution.stages.addAll(beforeStages)
+        val beforePipelineExecutionSize = beforePipelineString.length.toLong()
+        val beforeStageString = orcaObjectMapper.writeValueAsString(pipelineExecution.stages.single())
+        val beforeStageSize = beforeStageString.length.toLong()
+        val beforeTotalSize = beforePipelineExecutionSize + beforeStageSize
+
         sqlExecutionRepositoryNoCompression.store(pipelineExecution)
+
+        val afterStages = pipelineExecution.stages.toList()
+        pipelineExecution.stages.clear()
+        val expectedPipelineString = orcaObjectMapper.writeValueAsString(pipelineExecution)
+        pipelineExecution.stages.addAll(afterStages)
+        val expectedPipelineExecutionSize = expectedPipelineString.length.toLong()
+        val expectedStageString = orcaObjectMapper.writeValueAsString(pipelineExecution.stages.single())
+        val expectedStageSize = expectedStageString.length.toLong()
+        val expectedTotalSize = expectedPipelineExecutionSize + expectedStageSize
+
+        // Make sure the act of storing the pipeline didn't change the
+        // serialization (e.g. that the size attributes don't get serialized).
+        assertThat(beforePipelineString).isEqualTo(expectedPipelineString)
+        assertThat(beforeStageString).isEqualTo(expectedStageString)
+        assertThat(beforePipelineExecutionSize).isEqualTo(expectedPipelineExecutionSize);
+        assertThat(beforeStageSize).isEqualTo(expectedStageSize);
+        assertThat(beforeTotalSize).isEqualTo(expectedTotalSize);
+
+        // And make sure the size is correct
+        assertThat(pipelineExecution.size.get()).isEqualTo(expectedPipelineExecutionSize)
+        assertThat(pipelineExecution.stages.single().size.get()).isEqualTo(expectedStageSize)
+        assertThat(pipelineExecution.totalSize.get()).isEqualTo(expectedTotalSize)
 
         val numCompressedExecutions = database.context.fetchCount(testTable.compressedExecTable)
         assertThat(numCompressedExecutions).isEqualTo(0)
@@ -186,6 +219,11 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
         val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineId)
         assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+
+        // Make sure is calculated on retrieve as well
+        assertThat(actualPipelineExecution.size.get()).isEqualTo(expectedPipelineExecutionSize)
+        assertThat(actualPipelineExecution.stages.single().size.get()).isEqualTo(expectedStageSize)
+        assertThat(actualPipelineExecution.totalSize.get()).isEqualTo(expectedTotalSize)
       }
 
       test("store compressed, retrieve with compression disabled") {
@@ -242,6 +280,21 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
         val actualPipelineExecution = sqlExecutionRepositoryReadOnly.retrieve(testType, pipelineId)
         assertThat(actualPipelineExecution).isEqualTo(pipelineExecution)
+      }
+    }
+
+    context("retrievePipelinesForApplication") {
+      val pipelineExecution1 = PipelineExecutionImpl(ExecutionType.PIPELINE, "application-1")
+      val pipelineExecution2 = PipelineExecutionImpl(ExecutionType.PIPELINE, "application-2")
+
+      test("correctly use where clause") {
+        // Store pipelines in two different applications
+        sqlExecutionRepository.store(pipelineExecution1)
+        sqlExecutionRepository.store(pipelineExecution2)
+
+        val observable = sqlExecutionRepository.retrievePipelinesForApplication("application-2")
+        val executions = observable.toList().toBlocking().single()
+        assertThat(executions.map(PipelineExecution::getApplication).single()).isEqualTo("application-2")
       }
     }
   }

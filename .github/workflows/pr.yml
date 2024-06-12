@@ -20,8 +20,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: |
-            17
             11
+            17
           distribution: 'zulu'
           cache: 'gradle'
       - name: Prepare build variables
@@ -32,7 +32,7 @@ jobs:
       - name: Build
         env:
           ORG_GRADLE_PROJECT_version: ${{ steps.build_variables.outputs.VERSION }}
-        run: ./gradlew build ${{ steps.build_variables.outputs.REPO }}-web:installDist
+        run: ./gradlew -PenableCrossCompilerPlugin=true build ${{ steps.build_variables.outputs.REPO }}-web:installDist
       - name: Build slim container image
         uses: docker/build-push-action@v5
         with:
@@ -73,3 +73,16 @@ jobs:
           tags: |
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:latest-java11-ubuntu"
             "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}-java11-ubuntu"
+      - name: Build local slim container image for testing
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.slim
+          load: true
+          platforms: local
+          tags: |
+            "${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}"
+      - name: Test local slim container image
+        env:
+          FULL_DOCKER_IMAGE_NAME: "${{ steps.build_variables.outputs.REPO }}:${{ steps.build_variables.outputs.VERSION }}"
+        run: ./gradlew ${{ steps.build_variables.outputs.REPO }}-integration:test

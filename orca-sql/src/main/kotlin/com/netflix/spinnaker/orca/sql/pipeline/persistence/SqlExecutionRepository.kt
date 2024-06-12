@@ -660,36 +660,50 @@ class SqlExecutionRepository(
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
     withPool(poolName) {
-      val select = jooq.selectExecutions(
-        PIPELINE,
-        conditions = {
-          var conditions = it.where(
+      val select = jooq.select(selectFields())
+        .from(PIPELINE.tableName)
+        .join(
+          jooq.selectExecutions(
+          PIPELINE,
+          listOf(field("id")),
+          conditions = {
+            var conditions = it.where(
             field("config_id").`in`(*pipelineConfigIds.toTypedArray())
               .and(field("build_time").gt(buildTimeStartBoundary))
               .and(field("build_time").lt(buildTimeEndBoundary))
+            )
+
+            if (executionCriteria.statuses.isNotEmpty()) {
+              val statusStrings = executionCriteria.statuses.map { it.toString() }
+              conditions = conditions.and(field("status").`in`(*statusStrings.toTypedArray()))
+            }
+
+            conditions
+                       },
+          seek = {
+            val seek = when (executionCriteria.sortType) {
+              ExecutionComparator.BUILD_TIME_ASC -> it.orderBy(field("build_time").asc())
+              ExecutionComparator.BUILD_TIME_DESC -> it.orderBy(field("build_time").desc())
+              ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
+              ExecutionComparator.NATURAL_ASC -> it.orderBy(field("id").desc())
+              else -> it.orderBy(field("id").asc())
+            }
+            seek
+              .limit(executionCriteria.pageSize)
+              .offset((executionCriteria.page - 1) * executionCriteria.pageSize)
+          }
           )
-
-          if (executionCriteria.statuses.isNotEmpty()) {
-            val statusStrings = executionCriteria.statuses.map { it.toString() }
-            conditions = conditions.and(field("status").`in`(*statusStrings.toTypedArray()))
+        )
+        .using(field("id"))
+        .orderBy(
+          when (executionCriteria.sortType) {
+            ExecutionComparator.BUILD_TIME_ASC -> field("build_time").asc()
+            ExecutionComparator.BUILD_TIME_DESC -> field("build_time").desc()
+            ExecutionComparator.START_TIME_OR_ID -> field("start_time").desc()
+            ExecutionComparator.NATURAL_ASC -> field("id").desc()
+            else -> field("id").asc()
           }
-
-          conditions
-        },
-        seek = {
-          val seek = when (executionCriteria.sortType) {
-            ExecutionComparator.BUILD_TIME_ASC -> it.orderBy(field("build_time").asc())
-            ExecutionComparator.BUILD_TIME_DESC -> it.orderBy(field("build_time").desc())
-            ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
-            ExecutionComparator.NATURAL_ASC -> it.orderBy(field("id").desc())
-            else -> it.orderBy(field("id").asc())
-          }
-          seek
-            .limit(executionCriteria.pageSize)
-            .offset((executionCriteria.page - 1) * executionCriteria.pageSize)
-        }
-      )
-
+        )
       return select.fetchExecutions().toList()
     }
   }
@@ -775,6 +789,9 @@ class SqlExecutionRepository(
       val stageTableName = execution.type.stagesTableName
       val status = execution.status.toString()
       val body = mapper.writeValueAsString(execution)
+      val bodySize = body.length.toLong()
+      execution.setSize(bodySize)
+      log.debug("application ${execution.application}, pipeline name: ${execution.name}, pipeline config id ${execution.pipelineConfigId}, pipeline execution id ${execution.id}, execution size: ${bodySize}")
 
       val (executionId, legacyId) = mapLegacyId(ctx, tableName, execution.id, execution.startTime)
 
@@ -864,6 +881,10 @@ class SqlExecutionRepository(
     val stageTable = stage.execution.type.stagesTableName
     val table = stage.execution.type.tableName
     val body = mapper.writeValueAsString(stage)
+    val bodySize = body.length.toLong()
+    stage.setSize(bodySize)
+    log.debug("application ${stage.execution.application}, pipeline name: ${stage.execution.name}, pipeline config id ${stage.execution.pipelineConfigId}, pipeline execution id ${stage.execution.id}, stage name: ${stage.name}, stage id: ${stage.id}, size: ${bodySize}")
+
     val buildTime = stage.execution.buildTime
 
     val executionUlid = executionId ?: mapLegacyId(ctx, table, stage.execution.id, buildTime).first
@@ -1105,12 +1126,16 @@ class SqlExecutionRepository(
         type,
         conditions = {
           if (cursor == null) {
-            it.where("1=1")
+            if (where == null) {
+              it.where("1=1")
+            } else {
+              where(it)
+            }
           } else {
             if (where == null) {
-              it.where(field("id").gt(cursor))
+              it.where(field("id").lt(cursor))
             } else {
-              where(it).and(field("id").gt(cursor))
+              where(it).and(field("id").lt(cursor))
             }
           }
         },
