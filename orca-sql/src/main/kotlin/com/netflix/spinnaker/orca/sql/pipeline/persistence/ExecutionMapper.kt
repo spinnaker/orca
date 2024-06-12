@@ -138,16 +138,12 @@ class ExecutionMapper(
       )
   }
 
-  private fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext) {
+  @VisibleForTesting
+  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext) {
     val trigger = execution.trigger
-    if (pipelineRefEnabled && trigger is PipelineRefTrigger) {
+    if (trigger is PipelineRefTrigger) {
       val parentExecution = context
-        .select(listOf(
-          field("id"),
-          field("body"),
-          field(name("partition"))
-        ))
-        .from(ExecutionType.PIPELINE.tableName)
+        .selectExecution(execution.type, compressionProperties)
         .where(field("id").eq(trigger.parentExecutionId))
         .fetchExecutions(mapper, 200, compressionProperties, context, pipelineRefEnabled)
         .firstOrNull()

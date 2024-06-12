@@ -517,7 +517,7 @@ class SqlExecutionRepository(
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
-      val execution = jooq.selectExecution(ORCHESTRATION)
+      val execution = jooq.selectExecution(ORCHESTRATION, compressionProperties)
         .where(
           field("id").eq(
             field(
@@ -545,7 +545,7 @@ class SqlExecutionRepository(
 
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
-      val execution = jooq.selectExecution(PIPELINE)
+      val execution = jooq.selectExecution(PIPELINE, compressionProperties)
         .where(
           field("id").eq(
             field(
@@ -883,7 +883,8 @@ class SqlExecutionRepository(
    *
    * Returns the original [PipelineTrigger], if one exists.
    */
-  private fun mutatePipelineTrigger(execution: PipelineExecution): PipelineTrigger? {
+  @VisibleForTesting
+  internal fun mutatePipelineTrigger(execution: PipelineExecution): PipelineTrigger? {
     val pipelineTrigger = execution.trigger
     if (!pipelineRefEnabled || pipelineTrigger !is PipelineTrigger) {
       return null
@@ -1138,7 +1139,7 @@ class SqlExecutionRepository(
     forUpdate: Boolean = false
   ): PipelineExecution? {
     withPool(poolName) {
-      val select = ctx.selectExecution(type).where(id.toWhereCondition())
+      val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
       if (forUpdate) {
         select.forUpdate()
       }
@@ -1227,16 +1228,6 @@ class SqlExecutionRepository(
     return selectFrom
       .let { conditions(it) }
       .let { seek(it) }
-  }
-
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectExecutionFields(compressionProperties)): SelectJoinStep<Record> {
-    val selectFrom = select(fields).from(type.tableName)
-
-    if (compressionProperties.enabled) {
-      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
-    }
-
-    return selectFrom
   }
 
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =

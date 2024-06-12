@@ -20,11 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import de.huxhorn.sulky.ulid.ULID
-import org.jooq.DSLContext
-import org.jooq.Field
-import org.jooq.Record
-import org.jooq.SelectForUpdateStep
-import org.jooq.Table
+import org.jooq.*
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import java.sql.ResultSet
@@ -156,4 +152,14 @@ private fun selectStageFields(compressionProperties: ExecutionCompressionPropert
   return listOf(field("execution_id"),
     field("body")
   )
+}
+
+internal fun DSLContext.selectExecution(type: ExecutionType, compressionProperties: ExecutionCompressionProperties, fields: List<Field<Any>> = selectExecutionFields(compressionProperties)): SelectJoinStep<Record> {
+  val selectFrom = select(fields).from(type.tableName)
+
+  if (compressionProperties.enabled) {
+    selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+  }
+
+  return selectFrom
 }
