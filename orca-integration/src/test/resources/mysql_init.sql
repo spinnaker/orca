@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2024 Salesforce, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-apply plugin: "org.jetbrains.dokka"
+CREATE USER 'orca_service'@'%' IDENTIFIED BY '0rcaPassw0rd';
+CREATE USER 'orca_migrate'@'%' IDENTIFIED BY '0rcaPassw0rd';
 
-dokkaHtml {
-  dokkaSourceSets {
-    configureEach {
-      jdkVersion.set(17)
-    }
-  }
-}
+GRANT
+SELECT, INSERT, UPDATE, DELETE, CREATE, EXECUTE, SHOW VIEW
+ON *.*
+  TO 'orca_service'@'%';
+
+GRANT
+SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, INDEX, ALTER, LOCK TABLES, EXECUTE, SHOW VIEW
+ON *.*
+  TO 'orca_migrate'@'%';

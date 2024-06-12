@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2024 Salesforce, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-apply plugin: "org.jetbrains.dokka"
+CREATE USER orca_service with PASSWORD '0rcaPassw0rd';
+CREATE USER orca_migrate with PASSWORD '0rcaPassw0rd';
 
-dokkaHtml {
-  dokkaSourceSets {
-    configureEach {
-      jdkVersion.set(17)
-    }
-  }
-}
+grant create on schema public to orca_service;
+grant create on schema public to orca_migrate;
+
+GRANT pg_read_all_data TO orca_service;
+GRANT pg_write_all_data TO orca_service;
