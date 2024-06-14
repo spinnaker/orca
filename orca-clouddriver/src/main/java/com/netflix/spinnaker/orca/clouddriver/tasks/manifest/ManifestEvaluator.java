@@ -50,6 +50,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import retrofit.client.Response;
@@ -167,6 +168,12 @@ public class ManifestEvaluator implements CloudProviderAware {
   }
 
   private Artifact getManifestArtifact(StageExecution stage, ManifestContext context) {
+    if (StringUtils.hasText(context.getManifestArtifactId())
+        && StringUtils.hasText(context.getManifestArtifactAccount())) {
+      throw new IllegalArgumentException(
+          "Artifact account must not be set if referencing an artifact produced by a previous stage.");
+    }
+
     Artifact manifestArtifact =
         Optional.ofNullable(
                 artifactUtils.getBoundArtifactForStage(
