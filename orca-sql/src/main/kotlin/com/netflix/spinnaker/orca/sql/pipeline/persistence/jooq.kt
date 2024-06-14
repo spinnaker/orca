@@ -20,7 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import de.huxhorn.sulky.ulid.ULID
-import org.jooq.*
+import org.jooq.DSLContext
+import org.jooq.Field
+import org.jooq.Record
+import org.jooq.SelectForUpdateStep
+import org.jooq.SelectJoinStep
+import org.jooq.Table
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import java.sql.ResultSet
