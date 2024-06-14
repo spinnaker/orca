@@ -248,6 +248,16 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     this.outputs = outputs;
   }
 
+  private Map<String, Object> others = new HashMap<>();
+
+  public @Nonnull Map<String, Object> getOthers() {
+    return others;
+  }
+
+  public void setOthers(@Nonnull Map<String, Object> others) {
+    this.others = others;
+  }
+
   /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work
    * in a stage. Because tasks can be dynamically composed, this list is open updated during a

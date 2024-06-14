@@ -119,6 +119,14 @@ class DualExecutionRepository(
     select(stage.execution).updateStageContext(stage)
   }
 
+  override fun updateStageOthers(stage: StageExecution) {
+    select(stage.execution).updateStageOthers(stage)
+  }
+
+  override fun deleteStageOthers(stage: StageExecution) {
+    select(stage.execution).deleteStageOthers(stage)
+  }
+
   override fun removeStage(execution: PipelineExecution, stageId: String) {
     select(execution).removeStage(execution, stageId)
   }
