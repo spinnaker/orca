@@ -9,42 +9,70 @@ package com.netflix.spinnaker.orca.sql
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
-import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
-import com.netflix.spinnaker.orca.sql.pipeline.persistence.PipelineRefTrigger
 import com.netflix.spinnaker.orca.pipeline.model.support.CustomTriggerDeserializerSupplier
-import com.netflix.spinnaker.orca.pipeline.model.support.listValue
 import com.netflix.spinnaker.orca.pipeline.model.support.mapValue
+import com.netflix.spinnaker.orca.pipeline.model.support.listValue
+import com.netflix.spinnaker.orca.sql.pipeline.persistence.PipelineRefTrigger
 
 class PipelineRefTriggerDeserializerSupplier : CustomTriggerDeserializerSupplier {
-  override val predicate: (node: JsonNode) -> Boolean
+
+  override val rule: CustomTriggerDeserializerSupplier.OTHER_FIELD_RULE
+    get() = CustomTriggerDeserializerSupplier.OTHER_FIELD_RULE.EMPTY
+
+  override val predicateByNode: (node: JsonNode) -> Boolean
     get() = { node ->
-      node.isPipelineRefTrigger()
+      node.looksLikePipeline() || node.isPipelineRefTrigger()
+    }
+
+  override val predicateByTrigger: (trigger: Trigger) -> Boolean
+    get() = {
+      it.type == "pipelineRef"
     }
 
   override val deserializer: (node: JsonNode, parser: JsonParser) -> Trigger
     get() = { node, parser ->
+
       when {
-        node.isPipelineRefTrigger() -> {
+        node.looksLikePipeline() -> {
           with(node) {
             PipelineRefTrigger(
-              correlationId = get("correlationId")?.textValue(),
-              user = get("user")?.textValue(),
+              correlationId = get("correlationId").textValue(),
+              user = get("user").textValue(),
               parameters = get("parameters")?.mapValue(parser) ?: mutableMapOf(),
               artifacts = get("artifacts")?.listValue(parser) ?: mutableListOf(),
               notifications = get("notifications")?.listValue(parser) ?: mutableListOf(),
-              isRebake = get("rebake")?.booleanValue() == true,
-              isDryRun = get("dryRun")?.booleanValue() == true,
-              isStrategy = get("strategy")?.booleanValue() == true,
-              parentExecutionId = get("parentExecutionId").textValue(),
-              parentPipelineStageId = get("parentPipelineStageId")?.textValue()
+              isRebake = get("rebake")?.booleanValue() == false,
+              isDryRun = get("dryRun")?.booleanValue() == false,
+              isStrategy = get("strategy")?.booleanValue() == false,
+              parentExecutionId = get("parentExecution").get("id").textValue(),
+              parentPipelineStageId = get("parentPipelineStageId").textValue()
             )
           }
         }
-        else -> throw SystemException("Trigger does not look like a pipelineRef trigger")
+        else -> {
+          with(node) {
+            PipelineRefTrigger(
+              correlationId = get("correlationId").textValue(),
+              user = get("user").textValue(),
+              parameters = get("parameters")?.mapValue(parser) ?: mutableMapOf(),
+              artifacts = get("artifacts")?.listValue(parser) ?: mutableListOf(),
+              notifications = get("notifications")?.listValue(parser) ?: mutableListOf(),
+              isRebake = get("rebake")?.booleanValue() == false,
+              isDryRun = get("dryRun")?.booleanValue() == false,
+              isStrategy = get("strategy")?.booleanValue() == false,
+              parentPipelineStageId = get("parentPipelineStageId").textValue(),
+              parentExecutionId = get("parentExecutionId").textValue()
+
+            )
+          }
+        }
       }
     }
 
   private fun JsonNode.isPipelineRefTrigger() =
     get("type")?.textValue() == "pipelineRef"
+
+  private fun JsonNode.looksLikePipeline() =
+    hasNonNull("parentExecution")
 }

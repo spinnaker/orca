@@ -33,6 +33,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATIO
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
 import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
@@ -42,7 +43,6 @@ import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.RestartStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -783,7 +783,7 @@ class SqlExecutionRepository(
   private fun storeExecutionInternal(ctx: DSLContext, execution: PipelineExecution, storeStages: Boolean = false) {
     validateHandledPartitionOrThrow(execution)
 
-    val pipelineTrigger = mutatePipelineTrigger(execution)
+    execution.trigger = mapper.convertValue(execution.trigger, Trigger::class.java)
     val stages = execution.stages.toMutableList().toList()
     execution.stages.clear()
 
@@ -872,36 +872,7 @@ class SqlExecutionRepository(
 
       // Restore original object state.
       execution.stages.addAll(stages)
-      pipelineTrigger?.let {
-        execution.trigger = it
-      }
     }
-  }
-
-  /**
-   * Converts a [PipelineTrigger] into a [PipelineRefTrigger] for storage.
-   *
-   * Returns the original [PipelineTrigger], if one exists.
-   */
-  @VisibleForTesting
-  internal fun mutatePipelineTrigger(execution: PipelineExecution): PipelineTrigger? {
-    val pipelineTrigger = execution.trigger
-    if (!pipelineRefEnabled || pipelineTrigger !is PipelineTrigger) {
-      return null
-    }
-    execution.trigger = PipelineRefTrigger(
-      correlationId = pipelineTrigger.correlationId,
-      user = pipelineTrigger.user,
-      parameters = pipelineTrigger.parameters,
-      artifacts = pipelineTrigger.artifacts,
-      notifications = pipelineTrigger.notifications,
-      isRebake = pipelineTrigger.isRebake,
-      isDryRun = pipelineTrigger.isDryRun,
-      isStrategy = pipelineTrigger.isStrategy,
-      parentExecutionId = pipelineTrigger.parentExecution.id,
-      parentPipelineStageId = pipelineTrigger.parentPipelineStageId
-    )
-    return pipelineTrigger
   }
 
   private fun storeStageInternal(

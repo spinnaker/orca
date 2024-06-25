@@ -52,7 +52,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.*
 import java.time.Clock
 import java.util.*
-import javax.annotation.PostConstruct
 import javax.sql.DataSource
 
 @Configuration
@@ -173,7 +172,7 @@ class SqlConfiguration {
 
   @Bean
   @ConditionalOnProperty("execution-repository.sql.pipeline-ref.enabled")
-  fun pipelineRefTriggerDeserializer(@Qualifier("mapper") mapper: ObjectMapper): CustomTriggerDeserializerSupplier {
+  fun pipelineRefTriggerDeserializer(): CustomTriggerDeserializerSupplier {
     val customTrigger = PipelineRefTriggerDeserializerSupplier()
     TriggerDeserializer.customTriggerSuppliers.add(customTrigger)
     return customTrigger
