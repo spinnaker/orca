@@ -29,9 +29,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
  * TODO(rz): Refactor so that JsonNode is not needed (for orca-api compat)
  */
 interface CustomTriggerDeserializerSupplier {
-  enum class OTHER_FIELD_RULE { ALL, EMPTY }
-  val predicateByNode: (node: JsonNode) -> Boolean
-  val predicateByTrigger: (trigger: Trigger) -> Boolean
+  val type: String
+  val predicate: (node: JsonNode) -> Boolean
   val deserializer: (node: JsonNode, parser: JsonParser) -> Trigger
-  val rule: OTHER_FIELD_RULE
 }

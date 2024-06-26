@@ -23,6 +23,7 @@ import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -178,8 +179,11 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         // separately, so do the same here to calculate expected sizes
         val beforeStages = pipelineExecution.stages.toList()
         pipelineExecution.stages.clear()
+        val beforeTrigger =  pipelineExecution.trigger
+        pipelineExecution.trigger = orcaObjectMapper.convertValue(pipelineExecution.trigger, Trigger::class.java)
         val beforePipelineString = orcaObjectMapper.writeValueAsString(pipelineExecution)
         pipelineExecution.stages.addAll(beforeStages)
+        pipelineExecution.trigger = beforeTrigger
         val beforePipelineExecutionSize = beforePipelineString.length.toLong()
         val beforeStageString = orcaObjectMapper.writeValueAsString(pipelineExecution.stages.single())
         val beforeStageSize = beforeStageString.length.toLong()
@@ -302,35 +306,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
       }
     }
 
-    context("execution pipelineRef conversion") {
-
-      val executionWithPipelineTrigger =  PipelineExecutionImpl(ExecutionType.PIPELINE, "application-test").also {
-        it.trigger = PipelineTrigger(parentExecution = PipelineExecutionImpl(ExecutionType.PIPELINE, "stage-test"))
-      }
-      val executionWithDefaultTrigger = PipelineExecutionImpl(ExecutionType.PIPELINE, "application-test").also {
-        it.trigger = DefaultTrigger(type = "default")
-      }
-
-
-      test("mutate trigger pipeline into a pipelineRef") {
-        val pipelineRef = sqlExecutionRepositoryWithPipelineRefOnly.mutatePipelineTrigger(executionWithPipelineTrigger)
-        assertThat(pipelineRef).isNotNull
-        assert(pipelineRef is PipelineTrigger)
-        assert(executionWithPipelineTrigger.trigger is PipelineRefTrigger)
-      }
-
-      test("do not mutate trigger if trigger is not PipelineTrigger") {
-        val pipelineRef = sqlExecutionRepositoryWithPipelineRefOnly.mutatePipelineTrigger(executionWithDefaultTrigger)
-        assertThat(pipelineRef).isNull()
-        assert(executionWithDefaultTrigger.trigger is DefaultTrigger)
-      }
-
-      test("do not mutate trigger if pipelineRefEnabled config is disabled") {
-        val pipelineRef = sqlExecutionRepository.mutatePipelineTrigger(executionWithPipelineTrigger)
-        assertThat(pipelineRef).isNull()
-      }
-    }
-
     context("upserting executions with pipelineRef") {
 
       val testType = ExecutionType.PIPELINE
@@ -389,8 +364,11 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
 
         val beforeStages = pipelineExecutionWithoutTrigger.stages.toList()
         pipelineExecutionWithoutTrigger.stages.clear()
+        val beforeTrigger =  pipelineExecutionWithoutTrigger.trigger
+        pipelineExecutionWithoutTrigger.trigger = orcaObjectMapper.convertValue(pipelineExecutionWithoutTrigger.trigger, Trigger::class.java)
         val beforePipelineString = orcaObjectMapper.writeValueAsString(pipelineExecutionWithoutTrigger)
         pipelineExecutionWithoutTrigger.stages.addAll(beforeStages)
+        pipelineExecutionWithoutTrigger.trigger = beforeTrigger
         val beforeStageString = orcaObjectMapper.writeValueAsString(pipelineExecutionWithoutTrigger.stages.single())
         val stageExecutionId = pipelineExecutionWithoutTrigger.stages.single().id
 
@@ -443,6 +421,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         sqlExecutionRepositoryWithPipelineRefOnly.store(pipelineExecutionWithDefaultTrigger)
 
         //make sure the execution is not store with pipelineRef in database
+        expectedExecutionWithDefaultTrigger.trigger = orcaObjectMapper.convertValue(expectedExecutionWithDefaultTrigger.trigger, Trigger::class.java)
         val expectedPipelineString = orcaObjectMapper.writeValueAsString(expectedExecutionWithDefaultTrigger)
         val executions = database.context.select(listOf(field("id"), field("body")))
           .from(testTable)

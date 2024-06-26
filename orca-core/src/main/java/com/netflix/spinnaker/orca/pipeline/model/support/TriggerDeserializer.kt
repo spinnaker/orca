@@ -46,7 +46,7 @@ class TriggerDeserializer :
           // Custom Trigger Supplier has priority
           // chooses the first custom deserializer to keep behavior consistent
           // with the rest of this conditional
-          customTriggerSuppliers.first { it.predicateByNode.invoke(this) }.deserializer.invoke(this, parser)
+          customTriggerSuppliers.first { it.predicate.invoke(this) }.deserializer.invoke(this, parser)
         }
         looksLikeDocker() -> DockerTrigger(
           get("type").textValue(),
@@ -182,14 +182,12 @@ class TriggerDeserializer :
         )
       }.apply {
 
-        val otherFieldRule = customTriggerSuppliers.find { it.predicateByTrigger.invoke(this) }?.rule ?: CustomTriggerDeserializerSupplier.OTHER_FIELD_RULE.ALL
-        when(otherFieldRule) {
-          CustomTriggerDeserializerSupplier.OTHER_FIELD_RULE.EMPTY -> {
+        val otherFieldRule = customTriggerSuppliers.find { it.type == this.type }
+        if (otherFieldRule != null) {
             other = mutableMapOf()
           }
-          else -> {
+          else  {
             mapValue<Any>(parser).forEach { (k, v) -> other[k] = v }
-          }
         }
         resolvedExpectedArtifacts = get("resolvedExpectedArtifacts")?.listValue(parser) ?: mutableListOf()
       }
@@ -219,6 +217,6 @@ class TriggerDeserializer :
     hasNonNull("pluginId")
 
   private fun JsonNode.looksLikeCustom() =
-    customTriggerSuppliers.any { it.predicateByNode.invoke(this) }
+    customTriggerSuppliers.any { it.predicate.invoke(this) }
 
 }

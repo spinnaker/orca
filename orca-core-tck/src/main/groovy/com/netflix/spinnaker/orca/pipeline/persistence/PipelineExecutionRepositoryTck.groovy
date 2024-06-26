@@ -22,7 +22,10 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
+import com.netflix.spinnaker.orca.sql.pipeline.persistence.PipelineRefTrigger
 import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Subject
@@ -596,6 +599,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   def "parses the parent execution of a pipeline trigger"() {
     given:
+    TriggerDeserializer.customTriggerSuppliers.clear()
     def execution = pipeline {
       trigger = new PipelineTrigger(pipeline())
     }
@@ -604,6 +608,20 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     expect:
     with(repository().retrieve(PIPELINE, execution.id)) {
       trigger.parentExecution instanceof PipelineExecution
+    }
+  }
+
+  def "parses the pipelineRef of a pipeline trigger"() {
+    given:
+    TriggerDeserializer.customTriggerSuppliers.add(new PipelineRefTriggerDeserializerSupplier())
+    def execution = pipeline {
+      trigger = new PipelineTrigger(pipeline())
+    }
+    repository().store(execution)
+
+    expect:
+    with(repository().retrieve(PIPELINE, execution.id)) {
+      trigger instanceof PipelineRefTrigger
     }
   }
 
