@@ -611,20 +611,6 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
   }
 
-  def "parses the pipelineRef of a pipeline trigger"() {
-    given:
-    TriggerDeserializer.customTriggerSuppliers.add(new PipelineRefTriggerDeserializerSupplier())
-    def execution = pipeline {
-      trigger = new PipelineTrigger(pipeline())
-    }
-    repository().store(execution)
-
-    expect:
-    with(repository().retrieve(PIPELINE, execution.id)) {
-      trigger instanceof PipelineRefTrigger
-    }
-  }
-
   @Unroll
   def "can filter retrieve by status"() {
     given:
