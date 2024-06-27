@@ -56,7 +56,7 @@ import javax.sql.DataSource
 
 @Configuration
 @ConditionalOnProperty("sql.enabled")
-@EnableConfigurationProperties(OrcaSqlProperties::class, ExecutionCompressionProperties::class)
+@EnableConfigurationProperties(OrcaSqlProperties::class, ExecutionCompressionProperties::class, PipelineRefProperties::class)
 @Import(DefaultSqlConfiguration::class)
 @ComponentScan("com.netflix.spinnaker.orca.sql")
 
@@ -78,7 +78,7 @@ class SqlConfiguration {
     interlink: Optional<Interlink>,
     executionRepositoryListeners: Collection<ExecutionRepositoryListener>,
     compressionProperties: ExecutionCompressionProperties,
-    @Value("\${execution-repository.sql.pipeline-ref.enabled:false}") pipelineRefEnabled: Boolean
+    pipelineRefProperties: PipelineRefProperties
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -90,7 +90,7 @@ class SqlConfiguration {
       interlink = interlink.orElse(null),
       executionRepositoryListeners = executionRepositoryListeners,
       compressionProperties = compressionProperties,
-      pipelineRefEnabled = pipelineRefEnabled
+      pipelineRefEnabled = pipelineRefProperties.enabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
@@ -105,7 +105,7 @@ class SqlConfiguration {
     orcaSqlProperties: OrcaSqlProperties,
     @Value("\${execution-repository.sql.secondary.pool-name}") poolName: String,
     compressionProperties: ExecutionCompressionProperties,
-    @Value("\${execution-repository.sql.pipeline-ref.enabled:false}") pipelineRefEnabled: Boolean
+    pipelineRefProperties: PipelineRefProperties
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -116,7 +116,7 @@ class SqlConfiguration {
       orcaSqlProperties.stageReadSize,
       poolName,
       compressionProperties = compressionProperties,
-      pipelineRefEnabled = pipelineRefEnabled
+      pipelineRefEnabled = pipelineRefProperties.enabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }
