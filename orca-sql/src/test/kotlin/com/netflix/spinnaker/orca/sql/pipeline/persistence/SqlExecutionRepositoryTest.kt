@@ -538,7 +538,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
   private inner class Fixture {
 
     init {
-      TriggerDeserializer.customTriggerSuppliers.add(PipelineRefTriggerDeserializerSupplier())
+      TriggerDeserializer.customTriggerSuppliers.add(PipelineRefTriggerDeserializerSupplier(true))
     }
 
     val database = SqlTestUtil.initTcMysqlDatabase()!!

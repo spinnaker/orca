@@ -171,9 +171,10 @@ class SqlConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty("execution-repository.sql.pipeline-ref.enabled")
-  fun pipelineRefTriggerDeserializer(): CustomTriggerDeserializerSupplier {
-    val customTrigger = PipelineRefTriggerDeserializerSupplier()
+  fun pipelineRefTriggerDeserializer(
+    pipelineRefProperties: PipelineRefProperties
+  ): CustomTriggerDeserializerSupplier {
+    val customTrigger = PipelineRefTriggerDeserializerSupplier(pipelineRefProperties.enabled)
     TriggerDeserializer.customTriggerSuppliers.add(customTrigger)
     return customTrigger
   }

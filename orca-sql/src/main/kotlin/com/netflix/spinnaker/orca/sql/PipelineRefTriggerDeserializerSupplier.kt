@@ -24,13 +24,19 @@ import com.netflix.spinnaker.orca.pipeline.model.support.mapValue
 import com.netflix.spinnaker.orca.pipeline.model.support.listValue
 import com.netflix.spinnaker.orca.sql.pipeline.persistence.PipelineRefTrigger
 
-class PipelineRefTriggerDeserializerSupplier : CustomTriggerDeserializerSupplier {
+class PipelineRefTriggerDeserializerSupplier(
+  private val pipelineRefEnabled: Boolean
+) : CustomTriggerDeserializerSupplier {
 
   override val type: String = "pipelineRef"
 
   override val predicate: (node: JsonNode) -> Boolean
     get() = { node ->
-      node.looksLikePipeline() || node.isPipelineRefTrigger()
+      if (pipelineRefEnabled) {
+        node.looksLikePipeline() || node.isPipelineRefTrigger() //if pipelineRef enabled we deserialize PipelineTrigger as PipelineRefTrigger
+      } else {
+        node.isPipelineRefTrigger() //if pipelineRef disabled we still are able to deserialize PipelineRefTrigger
+      }
     }
 
   override val deserializer: (node: JsonNode, parser: JsonParser) -> Trigger
