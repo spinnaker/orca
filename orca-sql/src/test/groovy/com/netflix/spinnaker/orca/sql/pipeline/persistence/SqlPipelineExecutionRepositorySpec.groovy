@@ -98,11 +98,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
   ExecutionRepository createExecutionRepository(String partition, Interlink interlink = null, boolean compression = false) {
     return InstrumentedProxy.proxy(
         new DefaultRegistry(),
-<<<<<<< HEAD
-        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", interlink, [], new ExecutionCompressionProperties()),
-=======
-        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", interlink, [], new ExecutionCompressionProperties(enabled: compression), false),
->>>>>>> ccaeb0ac9 (fix(sqlExecutionRepo): Return compressed columns when enabled for retrieve pipelines with configId (#4765))
+        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", interlink, [], new ExecutionCompressionProperties(enabled: compression)),
         "namespace")
   }
 
