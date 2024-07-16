@@ -338,7 +338,7 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
   }
 
   @DisplayName(
-      "when pipelineRef.enabled: true, the object mapper can deserialize the PipelineTrigger into PipelineRefTrigger")
+      "ExecutionLauncher can start a new execution when a customerTriggerSupplier is provided")
   @Test
   public void testPipelineRefCanBeDeserializeWhenEnabled() throws Exception {
     // create the orcaObjectMapper to be able to deserialize triggers
@@ -376,7 +376,7 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
   }
 
   @DisplayName(
-      "when pipelineRef.enabled: false, the object mapper should not deserialize the PipelineTrigger into PipelineRefTrigger")
+      "ExecutionLauncher can start a new execution and the state of the trigger does not change when a customerTriggerSupplier is provided")
   @Test
   public void testPipelineTriggerIsNotDeserializedIntoPipelineRefWhenDisabled() throws Exception {
     // create the orcaObjectMapper to be able to deserialize triggers
@@ -414,7 +414,7 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
   }
 
   @DisplayName(
-      "when pipelineRef.enabled: false, the object mapper should still be able to deserialize PipelineRefTrigger")
+      "ExecutionLauncher can start a new execution and process special triggers when a customerTriggerSupplier is provided")
   @Test
   public void testPipelineRefTriggerCanBeDeserializedEvenDisabled() throws Exception {
     // create the orcaObjectMapper to be able to deserialize triggers
