@@ -404,7 +404,7 @@ class SqlExecutionRepository(
           it.orderBy(field("id").desc())
             .run {
               if (criteria.pageSize > 0) {
-                limit(criteria.pageSize)
+                offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
               } else {
                 this
               }
@@ -444,7 +444,7 @@ class SqlExecutionRepository(
               .statusIn(criteria.statuses)
           },
           seek = {
-            it.orderBy(field("id").desc()).limit(criteria.pageSize)
+            it.orderBy(field("id").desc()).offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
           }
         )
       } else {
@@ -457,7 +457,7 @@ class SqlExecutionRepository(
               .statusIn(criteria.statuses)
           },
           seek = {
-            it.orderBy(field("id").desc()).limit(criteria.pageSize)
+            it.orderBy(field("id").desc()).offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
           }
         )
       }
