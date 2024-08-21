@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.front50.tasks;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
@@ -34,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 @Component
@@ -197,9 +197,9 @@ public class SavePipelineTask implements RetryableTask {
     if (StringUtils.isNotEmpty(newPipelineID)) {
       try {
         return front50Service.getPipeline(newPipelineID);
-      } catch (RetrofitError e) {
+      } catch (SpinnakerHttpException e) {
         // Return a null if pipeline with expected id not found
-        if (e.getResponse() != null && e.getResponse().getStatus() == HTTP_NOT_FOUND) {
+        if (e.getResponseCode() == HTTP_NOT_FOUND) {
           log.debug("Existing pipeline with id {} not found. Returning null.", newPipelineID);
         }
       }
