@@ -26,6 +26,8 @@ import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
+import com.netflix.spinnaker.orca.clouddriver.config.TaskConfigurationProperties
+import com.netflix.spinnaker.orca.clouddriver.config.TaskConfigurationProperties.WaitOnJobCompletionTaskConfig
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.clouddriver.exception.JobFailedException
@@ -34,7 +36,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -54,6 +55,7 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
   private final RetrySupport retrySupport
   private final JobUtils jobUtils
   private final ExecutionRepository repository
+  private final WaitOnJobCompletionTaskConfig configProperties
   Front50Service front50Service
 
   static final String REFRESH_TYPE = "Job"
@@ -69,13 +71,17 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
                       RetrySupport retrySupport,
                       JobUtils jobUtils,
                       @Nullable Front50Service front50Service,
+                      TaskConfigurationProperties configProperties,
                       ExecutionRepository repository) {
     this.katoRestService = katoRestService
     this.objectMapper = objectMapper
     this.retrySupport = retrySupport
     this.jobUtils = jobUtils
     this.front50Service = front50Service
+    this.configProperties = configProperties.getWaitOnJobCompletionTask()
     this.repository = repository
+
+    log.info("output keys to filter: {}", this.configProperties.getExcludeKeysFromOutputs())
   }
 
   @Override
@@ -191,18 +197,21 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
       }
     }
 
-    TaskResult.builder(status).context(outputs).outputs(outputs).build()
+    // exclude certain configured keys from being stored in the stage outputs
+    Map<String, Object> filteredOutputs =  filterContextOutputs(outputs, configProperties.getExcludeKeysFromOutputs())
+    log.info("context outputs will only contain: ${filteredOutputs.keySet()} keys")
+
+    TaskResult.builder(status)
+        .context(outputs)
+        .outputs(filteredOutputs)
+        .build()
   }
 
   private Boolean applicationExists(String appName) {
     if (appName == null || front50Service == null) {
       return false
     }
-    try {
-      return front50Service.get(appName) != null
-    } catch (RetrofitError e) {
-      throw e
-    }
+    return front50Service.get(appName) != null
   }
 
   /**

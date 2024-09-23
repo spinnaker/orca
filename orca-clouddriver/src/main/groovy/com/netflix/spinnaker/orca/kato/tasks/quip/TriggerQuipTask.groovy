@@ -17,15 +17,16 @@
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import groovy.util.logging.Slf4j
+import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 import retrofit.client.Client
 
 @Deprecated
@@ -44,6 +45,10 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
 
   long backoffPeriod = 10000
   long timeout = 600000 // 10min
+
+  private Logger getLog() {
+    return log
+  }
 
   @Override
   TaskResult execute(StageExecution stage) {
@@ -75,8 +80,8 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
             def ref = objectMapper.readValue(instanceResponse.body.in().text, Map).ref
             taskIdMap.put(instanceHostName, ref.substring(1 + ref.lastIndexOf('/')))
             patchedInstanceIds << instanceId
-          } catch (RetrofitError e) {
-            log.warn("Error in Quip request: {}", e.message)
+          } catch (SpinnakerServerException e) {
+            getLog().warn("Error in Quip request: {}", e.message)
           }
         }
       }
@@ -108,7 +113,7 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
         if (version && !version.isEmpty()) {
           return version
         }
-      } catch (RetrofitError e) {
+      } catch (SpinnakerServerException e) {
         //retry
       }
       sleep(instanceVersionSleep)

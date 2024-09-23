@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.config.ObjectMapperSubtypeProperties
 import com.netflix.spinnaker.config.OrcaSqlProperties
 import com.netflix.spinnaker.config.SpringObjectMapperConfigurer
@@ -52,12 +53,11 @@ import java.time.Clock
 import java.time.Duration
 import java.util.Optional
 import org.jooq.DSLContext
-import org.junit.runner.RunWith
-import org.springframework.beans.factory.annotation.Autowired
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.context.junit.jupiter.SpringExtension
 
 @Configuration
 class SqlTestConfig {
@@ -67,13 +67,13 @@ class SqlTestConfig {
     return testDatabase.context
   }
 
-  @Autowired
+  @Bean
   fun sqlQueueObjectMapper(
     mapper: ObjectMapper,
     objectMapperSubtypeProperties: ObjectMapperSubtypeProperties,
     taskResolver: TaskResolver
-  ) {
-    mapper.apply {
+  ): ObjectMapper {
+    return mapper.apply {
       registerModule(KotlinModule.Builder().build())
       registerModule(
         SimpleModule()
@@ -120,7 +120,8 @@ class SqlTestConfig {
     mapper: ObjectMapper,
     registry: Registry,
     properties: SqlProperties,
-    orcaSqlProperties: OrcaSqlProperties
+    orcaSqlProperties: OrcaSqlProperties,
+    compressionProperties: ExecutionCompressionProperties
   ) = SqlExecutionRepository(
     orcaSqlProperties.partitionName,
     dsl,
@@ -128,7 +129,9 @@ class SqlTestConfig {
     properties.retries.transactions,
     orcaSqlProperties.batchReadSize,
     orcaSqlProperties.stageReadSize,
-    interlink = null
+    interlink = null,
+    compressionProperties = compressionProperties,
+    pipelineRefEnabled = false
   )
 
   @Bean
@@ -163,11 +166,12 @@ class SqlTestConfig {
     RedisClientSelector(redisClientDelegates)
 }
 
-@RunWith(SpringRunner::class)
+@ExtendWith(SpringExtension::class)
 @SpringBootTest(
   classes = [
     SqlTestConfig::class,
     SqlProperties::class,
+    ExecutionCompressionProperties::class,
     TestConfig::class,
     DynamicConfigService.NoopDynamicConfig::class,
     EmbeddedRedisConfiguration::class,

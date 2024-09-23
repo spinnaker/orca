@@ -36,6 +36,7 @@ import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.kv
 import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -64,6 +65,15 @@ class CompleteExecutionHandler(
         message.determineFinalStatus(execution) { status ->
           execution.updateStatus(status)
           repository.updateStatus(execution)
+          val executionContextSize = execution.getTotalSize()
+          if (executionContextSize.isPresent) {
+            log.info("completed pipeline execution size: {},{},{},{},{}",
+              kv("application", execution.application),
+              kv("pipelineName", execution.name),
+              kv("pipelineConfigId", execution.pipelineConfigId),
+              kv("pipelineExecutionId", execution.id),
+              kv("size", executionContextSize.get()))
+          }
           publisher.publishEvent(ExecutionComplete(this, execution))
 
           registry.counter(
@@ -84,11 +94,17 @@ class CompleteExecutionHandler(
           }
         }
       }
-      execution.pipelineConfigId?.let {
-        queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
+      log.debug("Execution ${execution.id} is with ${execution.status} status and  Disabled concurrent executions is ${execution.isLimitConcurrent}")
+      if (execution.status != RUNNING) {
+        execution.pipelineConfigId?.let {
+          queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
+        }
+      } else {
+          log.debug("Not starting waiting executions as execution ${execution.id} is currently RUNNING.")
       }
     }
   }
+
 
   private fun CompleteExecution.determineFinalStatus(
     execution: PipelineExecution,

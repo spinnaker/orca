@@ -17,11 +17,18 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.google.common.annotations.VisibleForTesting
+import com.netflix.spinnaker.config.CompressionType
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import java.sql.ResultSet
 import org.jooq.DSLContext
+import org.jooq.impl.DSL.field
+import org.jooq.impl.DSL.name
 import org.slf4j.LoggerFactory
+import java.nio.charset.StandardCharsets
 
 /**
  * Converts a SQL [ResultSet] into an Execution.
@@ -31,10 +38,37 @@ import org.slf4j.LoggerFactory
  */
 class ExecutionMapper(
   private val mapper: ObjectMapper,
-  private val stageBatchSize: Int
+  private val stageBatchSize: Int,
+  private val compressionProperties: ExecutionCompressionProperties,
+  private val pipelineRefEnabled: Boolean
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
+
+  /**
+   * Conditionally decompresses a compressed execution body. if present, and provides the
+   * execution body content as a string
+   *
+   * @param rs [ResultSet] to pull the body from
+   *
+   * @return the decompressed execution body content
+   */
+  @VisibleForTesting
+  fun getDecompressedBody(rs: ResultSet): String {
+    val body: String? = rs.getString("body")
+
+    // If compression is disabled, rs doesn't contain compression-related
+    // fields, so don't try to access them.
+    return if (compressionProperties.enabled && body.isNullOrEmpty()) {
+      val compressionType = CompressionType.valueOf(rs.getString("compression_type"))
+      val compressedBody = rs.getBytes("compressed_body")
+      compressionType.getInflator(compressedBody.inputStream())
+        .bufferedReader(StandardCharsets.UTF_8)
+        .use { it.readText() }
+    } else {
+      body ?: ""
+    }
+  }
 
   fun map(rs: ResultSet, context: DSLContext): Collection<PipelineExecution> {
     val results = mutableListOf<PipelineExecution>()
@@ -42,20 +76,25 @@ class ExecutionMapper(
     val legacyMap = mutableMapOf<String, String>()
 
     while (rs.next()) {
-      mapper.readValue<PipelineExecution>(rs.getString("body"))
-        .also {
-          execution ->
-          results.add(execution)
-          execution.partition = rs.getString("partition")
+      val body = getDecompressedBody(rs)
+      if (body.isNotEmpty()) {
+        mapper.readValue<PipelineExecution>(body)
+          .also {
+            execution ->
+            convertPipelineRefTrigger(execution, context)
+            execution.setSize(body.length.toLong())
+            results.add(execution)
+            execution.partition = rs.getString("partition")
 
-          if (rs.getString("id") != execution.id) {
-            // Map legacyId executions to their current ULID
-            legacyMap[execution.id] = rs.getString("id")
-            executionMap[rs.getString("id")] = execution
-          } else {
-            executionMap[execution.id] = execution
+            if (rs.getString("id") != execution.id) {
+              // Map legacyId executions to their current ULID
+              legacyMap[execution.id] = rs.getString("id")
+              executionMap[rs.getString("id")] = execution
+            } else {
+              executionMap[execution.id] = execution
+            }
           }
-        }
+      }
     }
 
     if (results.isNotEmpty()) {
@@ -70,7 +109,7 @@ class ExecutionMapper(
           }
         }
 
-        context.selectExecutionStages(type, executionIds).let { stageResultSet ->
+        context.selectExecutionStages(type, executionIds, compressionProperties).let { stageResultSet ->
           while (stageResultSet.next()) {
             mapStage(stageResultSet, executionMap)
           }
@@ -87,13 +126,38 @@ class ExecutionMapper(
 
   private fun mapStage(rs: ResultSet, executions: Map<String, PipelineExecution>) {
     val executionId = rs.getString("execution_id")
+    val body = getDecompressedBody(rs)
     executions.getValue(executionId)
       .stages
       .add(
-        mapper.readValue<StageExecution>(rs.getString("body"))
+        mapper.readValue<StageExecution>(body)
           .apply {
             execution = executions.getValue(executionId)
+            setSize(body.length.toLong())
           }
       )
+  }
+
+  @VisibleForTesting
+  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext) {
+    val trigger = execution.trigger
+    if (trigger is PipelineRefTrigger) {
+      val parentExecution = context
+        .selectExecution(execution.type, compressionProperties)
+        .where(field("id").eq(trigger.parentExecutionId))
+        .fetchExecutions(mapper, 200, compressionProperties, context, pipelineRefEnabled)
+        .firstOrNull()
+
+      if (parentExecution == null) {
+        // If someone deletes the parent execution, we'll be unable to load the full, valid child pipeline. Rather than
+        // throw an exception, we'll continue to load the execution with [PipelineRefTrigger] and let downstream
+        // consumers throw exceptions if they need to. We don't want to throw here as it would break pipeline list
+        // operations, etc.
+        log.warn("Attempted to load parent execution for '${execution.id}', but it no longer exists: ${trigger.parentExecutionId}")
+        return
+      }
+
+      execution.trigger = trigger.toPipelineTrigger(parentExecution)
+    }
   }
 }

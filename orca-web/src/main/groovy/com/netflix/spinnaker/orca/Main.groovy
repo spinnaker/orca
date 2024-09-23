@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.ClouddriverJobConfiguration
+import com.netflix.spinnaker.orca.clouddriver.config.ClouddriverLambdaConfiguration
 import com.netflix.spinnaker.orca.config.CloudFoundryConfiguration
 import com.netflix.spinnaker.orca.config.GremlinConfiguration
 import com.netflix.spinnaker.orca.config.KeelConfiguration
@@ -42,6 +43,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.annotation.EnableAsync
+import com.netflix.spinnaker.kork.boot.DefaultPropertiesBuilder
 
 @EnableAsync
 @Import([
@@ -54,6 +56,7 @@ import org.springframework.scheduling.annotation.EnableAsync
   FlexConfiguration,
   CloudDriverConfiguration,
   ClouddriverJobConfiguration,
+  ClouddriverLambdaConfiguration,
   IgorConfiguration,
   MineConfiguration,
   ApplicationConfig,
@@ -71,15 +74,7 @@ import org.springframework.scheduling.annotation.EnableAsync
     exclude = [BatchAutoConfiguration, GroovyTemplateAutoConfiguration, DataSourceAutoConfiguration]
 )
 class Main extends SpringBootServletInitializer {
-  static final Map<String, String> DEFAULT_PROPS = [
-    'netflix.environment'              : 'test',
-    'netflix.account'                  : '${netflix.environment}',
-    'netflix.stack'                    : 'test',
-    'spring.config.additional-location': '${user.home}/.spinnaker/',
-    'spring.application.name'          : 'orca',
-    'spring.config.name'               : 'spinnaker,${spring.application.name}',
-    'spring.profiles.active'           : '${netflix.environment},local'
-  ]
+  static final Map<String, String> DEFAULT_PROPS = new DefaultPropertiesBuilder().property("spring.application.name", "orca").build()
 
   static void main(String... args) {
     new SpringApplicationBuilder().properties(DEFAULT_PROPS).sources(Main).run(args)

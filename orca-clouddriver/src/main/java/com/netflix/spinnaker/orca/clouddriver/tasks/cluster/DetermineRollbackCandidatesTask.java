@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
+import com.netflix.spinnaker.orca.clouddriver.config.RollbackConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.model.Cluster;
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup.Capacity;
@@ -79,6 +80,8 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
       new TypeReference<>() {};
 
+  private final boolean dynamicRollbackTimeoutEnabled;
+
   private final RetrySupport retrySupport;
   private final CloudDriverService cloudDriverService;
   private final PreviousImageRollbackSupport previousImageRollbackSupport;
@@ -88,12 +91,14 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
       ObjectMapper objectMapper,
       RetrySupport retrySupport,
       CloudDriverService cloudDriverService,
-      FeaturesService featuresService) {
+      FeaturesService featuresService,
+      RollbackConfigurationProperties rollbackConfigurationProperties) {
     this.retrySupport = retrySupport;
     this.cloudDriverService = cloudDriverService;
     this.previousImageRollbackSupport =
         new PreviousImageRollbackSupport(
             objectMapper, cloudDriverService, featuresService, retrySupport);
+    this.dynamicRollbackTimeoutEnabled = rollbackConfigurationProperties.isDynamicRollbackEnabled();
   }
 
   @Override
@@ -107,7 +112,9 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   }
 
   public long getDynamicTimeout(StageExecution stage) {
-    if (stage.getContext().containsKey("rollbackTimeout")) {
+    boolean shouldUseDynamicRollbackTimeout =
+        dynamicRollbackTimeoutEnabled && stage.getContext().containsKey("rollbackTimeout");
+    if (shouldUseDynamicRollbackTimeout) {
       return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
     }
 

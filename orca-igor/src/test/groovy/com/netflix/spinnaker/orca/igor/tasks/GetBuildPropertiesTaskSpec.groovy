@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.orca.config.TaskConfigurationProperties
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
@@ -49,6 +51,10 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   @Shared
   def execution = Stub(PipelineExecutionImpl)
+
+  @Shared
+  private TaskConfigurationProperties configProperties = new TaskConfigurationProperties()
+
 
   def "retrieves values from a property file if specified"() {
     given:
@@ -88,8 +94,6 @@ class GetBuildPropertiesTaskSpec extends Specification {
                                                               buildNumber      : BUILD_NUMBER,
                                                               propertyFile     : PROPERTY_FILE,
                                                               expectedArtifacts: [[matchArtifact: [type: "docker/image"]],]])
-    def bindTask = new BindProducedArtifactsTask()
-
     and:
     1 * buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >>
         [val1: "one", artifacts: [
@@ -97,8 +101,8 @@ class GetBuildPropertiesTaskSpec extends Specification {
            reference: "gcr.io/project/my-image@sha256:28f82eba",
            name: "gcr.io/project/my-image",
            version: "sha256:28f82eba"],]]
-    bindTask.artifactUtils = artifactUtils
-    bindTask.objectMapper = new ObjectMapper()
+
+    def bindTask = new BindProducedArtifactsTask(artifactUtils, new ObjectMapper(), configProperties)
 
     when:
     def jenkinsResult = task.execute(stage)
@@ -120,9 +124,11 @@ class GetBuildPropertiesTaskSpec extends Specification {
       getResponse() >> new Response("", 500, "", Collections.emptyList(), null)
     }
 
+    def httpException = new SpinnakerHttpException(igorError)
+
     and:
     1 * buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >>
-      { throw igorError }
+      { throw httpException }
 
     when:
     TaskResult result = task.execute(stage)

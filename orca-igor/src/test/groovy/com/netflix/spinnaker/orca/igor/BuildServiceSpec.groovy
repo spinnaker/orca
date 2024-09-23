@@ -33,7 +33,7 @@ class BuildServiceSpec extends Specification {
 
   void setup() {
     igorService = Mock(IgorService)
-    buildService = new BuildService(igorService, new IgorFeatureFlagProperties())
+    buildService = new BuildService(igorService, new IgorFeatureFlagProperties(jobNameAsQueryParameter: false))
   }
 
   void 'build method encodes the job name'() {
@@ -52,6 +52,18 @@ class BuildServiceSpec extends Specification {
     1 * igorService.getBuild(BUILD_NUMBER, MASTER, JOB_NAME_ENCODED)
   }
 
+  void 'getBuild method get job name in query when flag is true'() {
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
+
+    when:
+    buildService.getBuild(BUILD_NUMBER, MASTER, JOB_NAME)
+
+    then:
+    1 * igorService.getBuildWithJobAsQueryParam(BUILD_NUMBER, MASTER, JOB_NAME_ENCODED)
+  }
+
   void 'getPropertyFile method encodes the job name'() {
     when:
     buildService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME)
@@ -60,7 +72,22 @@ class BuildServiceSpec extends Specification {
     1 * igorService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME_ENCODED)
   }
 
+  void 'getPropertyFile method with job in query when flag is true'() {
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
+
+    when:
+    buildService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME)
+
+    then:
+    1 * igorService.getPropertyFileWithJobAsQueryParam(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME_ENCODED)
+  }
+
   void 'stop method sends job name in path when flag is false'() {
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(false)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
     when:
     buildService.stop(MASTER, JOB_NAME, QUEUED_BUILD, BUILD_NUMBER )
 
@@ -70,7 +97,6 @@ class BuildServiceSpec extends Specification {
 
   void 'stop method sends job name in query when flag is true'() {
     IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
-    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
     buildService = new BuildService(igorService, igorFeatureFlagProperties)
 
     when:

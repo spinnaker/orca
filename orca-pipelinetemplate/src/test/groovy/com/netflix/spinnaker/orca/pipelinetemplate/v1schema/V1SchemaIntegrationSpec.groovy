@@ -38,20 +38,19 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.YamlRenderedValueConverter
 import org.springframework.core.io.Resource
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
-import org.unitils.reflectionassert.ReflectionComparatorMode
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static org.unitils.reflectionassert.ReflectionAssert.assertReflectionEquals
+import static org.assertj.core.api.Assertions.assertThat
 
 class V1SchemaIntegrationSpec extends Specification {
 
   ObjectMapper objectMapper = OrcaObjectMapper.newInstance()
   def oortService = Mock(OortService)
 
-  TemplateLoader templateLoader = new TemplateLoader([new ResourceSchemeLoader("/integration/v1schema", objectMapper)])
+  TemplateLoader templateLoader = new TemplateLoader([new ResourceSchemeLoader("/integration/v1schema", objectMapper)], objectMapper, renderer)
   V2TemplateLoader v2TemplateLoader = new V2TemplateLoader(oortService, objectMapper)
   ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
 
@@ -89,7 +88,7 @@ class V1SchemaIntegrationSpec extends Specification {
     def result = subject.process(integration.toRequest())
 
     then:
-    assertReflectionEquals(expected, result, ReflectionComparatorMode.IGNORE_DEFAULTS)
+    assertThat(expected).usingRecursiveComparison().ignoringActualNullFields().isEqualTo(result)
 
     where:
     integration << new IntegrationTestDataProvider().provide()
@@ -115,13 +114,13 @@ class V1SchemaIntegrationSpec extends Specification {
         }
 
         if (it.filename.endsWith('-config.yml')) {
-          test.configuration = objectMapper.convertValue(yaml.load(it.file.text), TemplateConfiguration)
+          test.configuration = objectMapper.convertValue(yaml.load(it.getFile().text), TemplateConfiguration)
         } else if (it.filename.endsWith('-expected.json')) {
-          test.expected = objectMapper.readValue(it.file, Map)
+          test.expected = objectMapper.readValue(it.getFile(), Map)
         } else if (it.filename.endsWith('-request.json')) {
-          test.request = objectMapper.readValue(it.file, Map)
+          test.request = objectMapper.readValue(it.getFile(), Map)
         } else {
-          test.template.add(objectMapper.convertValue(yaml.load(it.file.text), PipelineTemplate))
+          test.template.add(objectMapper.convertValue(yaml.load(it.getFile().text), PipelineTemplate))
         }
       }
 

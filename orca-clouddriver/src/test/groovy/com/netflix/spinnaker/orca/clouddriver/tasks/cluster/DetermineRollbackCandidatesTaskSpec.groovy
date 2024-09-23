@@ -22,6 +22,7 @@ import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.ModelUtils
+import com.netflix.spinnaker.orca.clouddriver.config.RollbackConfigurationProperties
 import com.netflix.spinnaker.orca.clouddriver.model.EntityTags
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import spock.lang.Specification
@@ -34,6 +35,12 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 class DetermineRollbackCandidatesTaskSpec extends Specification {
   def objectMapper = new ObjectMapper()
   def featuresService = Mock(FeaturesService)
+  def dynamicRollback = new RollbackConfigurationProperties.DynamicRollback(
+      enabled: true
+  )
+  def rollbackConfigurationProperties = new RollbackConfigurationProperties(
+      dynamicRollback: dynamicRollback
+  )
   CloudDriverService cloudDriverService = Mock()
 
   @Subject
@@ -41,7 +48,8 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
       objectMapper,
       new RetrySupport(),
       cloudDriverService,
-      featuresService
+      featuresService,
+      rollbackConfigurationProperties
   )
 
   def stage = stage {
@@ -54,6 +62,26 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
             cluster: "app-stack-details"
         ]
     ]
+  }
+
+  def "should use default timeout" () {
+    given: "The user preferred rollbackTimeout is not present in the context"
+
+    when: "The dynamicRollback is enabled"
+
+    then: "The rollback timeout used is the default value"
+    task.getDynamicTimeout(stage) == 300000
+  }
+
+  def "should use dynamic timeout" () {
+    given: "The user preferred rollbackTimeout is present in the context"
+
+    stage.context["rollbackTimeout"] = 2
+
+    when: "The dynamicRollback is enabled"
+
+    then: "The rollback timeout used is the user's choice"
+    task.getDynamicTimeout(stage) == 120000
   }
 
   def "should EXPLICIT-ly roll back to original ASG when original cluster is in context"() {

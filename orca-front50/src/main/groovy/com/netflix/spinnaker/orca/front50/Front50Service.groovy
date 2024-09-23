@@ -74,6 +74,9 @@ interface Front50Service {
   @POST("/pipelines")
   Response savePipeline(@Body Map pipeline, @Query("staleCheck") boolean staleCheck)
 
+  @POST("/pipelines/batchUpdate")
+  Response savePipelines(@Body List<Map<String, Object>> pipelines, @Query("staleCheck") boolean staleCheck)
+
   @PUT("/pipelines/{pipelineId}")
   Response updatePipeline(@Path("pipelineId") String pipelineId, @Body Map pipeline)
 
@@ -82,6 +85,9 @@ interface Front50Service {
 
   @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
+
+  @GET("/pipelines/triggeredBy/{pipelineId}/{status}?restricted=false")
+  List<Map<String, Object>> getTriggeredPipelines(@Path("pipelineId") String pipelineId, @Path("status") String status)
 
   @POST('/actions/pipelines/reorder')
   Response reorderPipelines(@Body ReorderPipelinesCommand reorderPipelinesCommand)

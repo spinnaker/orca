@@ -324,6 +324,18 @@ public class StageExecutionImpl implements StageExecution, Serializable {
 
   private LastModifiedDetails lastModified;
 
+  @JsonIgnore private Long size = null;
+
+  @Override
+  public Optional<Long> getSize() {
+    return Optional.ofNullable(this.size);
+  }
+
+  @Override
+  public void setSize(long size) {
+    this.size = size;
+  }
+
   @Nullable
   @Override
   public StageExecution.LastModifiedDetails getLastModified() {
@@ -550,7 +562,7 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     List<StageExecution> children = new ArrayList<>();
 
     if (execution != null) {
-      HashSet<String> visited = new HashSet<>();
+      List<StageExecution> notVisited = new ArrayList<>(getExecution().getStages());
       LinkedList<StageExecution> queue = new LinkedList<>();
 
       queue.push(this);
@@ -563,11 +575,12 @@ public class StageExecutionImpl implements StageExecution, Serializable {
         }
 
         first = false;
-        visited.add(stage.getRefId());
+        notVisited.remove(stage);
 
-        List<StageExecution> childStages = stage.downstreamStages();
-
-        childStages.stream().filter(s -> !visited.contains(s.getRefId())).forEach(queue::add);
+        notVisited.stream()
+            .filter(
+                s -> s.getRequisiteStageRefIds().contains(stage.getRefId()) && !queue.contains(s))
+            .forEach(queue::add);
       }
     }
 
