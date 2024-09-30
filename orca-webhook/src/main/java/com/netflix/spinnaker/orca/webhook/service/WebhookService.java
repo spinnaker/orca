@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties;
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,11 +54,21 @@ public class WebhookService {
           "X-SPINNAKER-REQUEST-ID",
           "X-SPINNAKER-EXECUTION-ID");
 
-  @Autowired private List<RestTemplateProvider> restTemplateProviders = new ArrayList<>();
+  private final List<RestTemplateProvider> restTemplateProviders;
 
-  @Autowired private UserConfiguredUrlRestrictions userConfiguredUrlRestrictions;
+  private final UserConfiguredUrlRestrictions userConfiguredUrlRestrictions;
 
-  @Autowired private WebhookProperties preconfiguredWebhookProperties;
+  private final WebhookProperties preconfiguredWebhookProperties;
+
+  @Autowired
+  public WebhookService(
+      List<RestTemplateProvider> restTemplateProviders,
+      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
+      WebhookProperties preconfiguredWebhookProperties) {
+    this.restTemplateProviders = restTemplateProviders;
+    this.userConfiguredUrlRestrictions = userConfiguredUrlRestrictions;
+    this.preconfiguredWebhookProperties = preconfiguredWebhookProperties;
+  }
 
   public ResponseEntity<Object> callWebhook(StageExecution stageExecution) {
     RestTemplateData restTemplateData = getRestTemplateData(WebhookTaskType.CREATE, stageExecution);
