@@ -157,6 +157,15 @@ public class WebhookService {
         URI validatedUri =
             userConfiguredUrlRestrictions.validateURI(
                 provider.getTargetUrl(destinationUrl, stageData));
+
+        if (!isAllowedRequest(httpMethod, validatedUri)) {
+          String message =
+              String.format(
+                  "http method '%s', uri: '%s' not allowed",
+                  httpMethod.toString(), validatedUri.toString());
+          log.info(message);
+          throw new IllegalArgumentException(message);
+        }
         RestTemplate restTemplate = provider.getRestTemplate(destinationUrl);
         return new RestTemplateData(
             restTemplate, validatedUri, httpMethod, payloadEntity, stageData);
@@ -176,6 +185,22 @@ public class WebhookService {
     return webhookProperties.getPreconfigured().stream()
         .filter(WebhookProperties.PreconfiguredWebhook::isEnabled)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Return true if the allow list is disabled, or if the given httpMethod + uri are in the list of
+   * allowed requests, false otherwise.
+   */
+  private boolean isAllowedRequest(HttpMethod httpMethod, URI uri) {
+    if (!webhookProperties.isAllowedRequestsEnabled()) {
+      return true;
+    }
+
+    return webhookProperties.getAllowedRequests().stream()
+        .anyMatch(
+            allowedRequest ->
+                allowedRequest.getHttpMethods().contains(httpMethod.toString())
+                    && uri.toString().startsWith(allowedRequest.getUrlPrefix()));
   }
 
   private static HttpHeaders buildHttpHeaders(Map<String, Object> customHeaders) {
