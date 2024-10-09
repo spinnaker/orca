@@ -58,16 +58,16 @@ public class WebhookService {
 
   private final UserConfiguredUrlRestrictions userConfiguredUrlRestrictions;
 
-  private final WebhookProperties preconfiguredWebhookProperties;
+  private final WebhookProperties webhookProperties;
 
   @Autowired
   public WebhookService(
       List<RestTemplateProvider> restTemplateProviders,
       UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
-      WebhookProperties preconfiguredWebhookProperties) {
+      WebhookProperties webhookProperties) {
     this.restTemplateProviders = restTemplateProviders;
     this.userConfiguredUrlRestrictions = userConfiguredUrlRestrictions;
-    this.preconfiguredWebhookProperties = preconfiguredWebhookProperties;
+    this.webhookProperties = webhookProperties;
   }
 
   public ResponseEntity<Object> callWebhook(StageExecution stageExecution) {
@@ -173,7 +173,7 @@ public class WebhookService {
   }
 
   public List<WebhookProperties.PreconfiguredWebhook> getPreconfiguredWebhooks() {
-    return preconfiguredWebhookProperties.getPreconfigured().stream()
+    return webhookProperties.getPreconfigured().stream()
         .filter(WebhookProperties.PreconfiguredWebhook::isEnabled)
         .collect(Collectors.toList());
   }
