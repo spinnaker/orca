@@ -33,6 +33,7 @@ import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.webhook.config.WebhookConfiguration;
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.web.client.ResourceAccessException;
 
 class WebhookServiceTest {
 
@@ -76,7 +78,7 @@ class WebhookServiceTest {
 
     ClientHttpRequestFactory requestFactory =
         webhookConfiguration.webhookRequestFactory(
-            okHttpClientConfigurationProperties, userConfiguredUrlRestrictions);
+            okHttpClientConfigurationProperties, userConfiguredUrlRestrictions, webhookProperties);
 
     RestTemplateProvider restTemplateProvider =
         new DefaultRestTemplateProvider(webhookConfiguration.restTemplate(requestFactory));
@@ -199,5 +201,87 @@ class WebhookServiceTest {
         .hasMessageContaining("uri: '" + url + "' not allowed");
 
     apiProvider.verify(0, RequestPatternBuilder.allRequests());
+  }
+
+  @Test
+  void testRequestHeadersTooBig() throws Exception {
+    // Even with an empty body, even one request header (e.g. Content-Length: 0) is too big.
+    webhookProperties.setMaxRequestBytes(1L);
+
+    String url = apiProvider.baseUrl();
+
+    // The StageExecutionImpl constructor mutates the map, so use a mutable map.
+    Map<String, Object> webhookStageData =
+        new HashMap<>(Map.of("url", url, "method", HttpMethod.GET));
+    StageExecution stage =
+        new StageExecutionImpl(null, "webhook", "test-webhook-stage", webhookStageData);
+
+    Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
+
+    assertThat(thrown)
+        .isInstanceOf(ResourceAccessException.class)
+        .hasRootCauseExactlyInstanceOf(IOException.class)
+        .hasRootCauseMessage("Canceled");
+
+    apiProvider.verify(0, RequestPatternBuilder.allRequests());
+  }
+
+  @Test
+  void testRequestHeadersAndBodyTooBig() throws Exception {
+    // Empirically, this is bigger than the headers in this test, and smaller than headers + body.
+    webhookProperties.setMaxRequestBytes(235L);
+
+    String url = apiProvider.baseUrl();
+
+    String payload = "{ \"foo\": \"bar\" }";
+
+    // The StageExecutionImpl constructor mutates the map, so use a mutable map.
+    Map<String, Object> webhookStageData =
+        new HashMap<>(Map.of("url", url, "method", HttpMethod.POST, "payload", payload));
+    StageExecution stage =
+        new StageExecutionImpl(null, "webhook", "test-webhook-stage", webhookStageData);
+
+    Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
+
+    assertThat(thrown)
+        .isInstanceOf(ResourceAccessException.class)
+        .hasRootCauseExactlyInstanceOf(IOException.class)
+        .hasRootCauseMessage("Canceled");
+
+    apiProvider.verify(0, RequestPatternBuilder.allRequests());
+  }
+
+  @Test
+  void testRequestHeadersAndBodySmallEnough() throws Exception {
+    // Verify that request processing still functions properly after verifying the request size.
+
+    // Empirically, this is bigger than the headers in this test, and bigger
+    // than headers + body.
+    webhookProperties.setMaxRequestBytes(500L);
+
+    String path = "/path/to/some/endpoint";
+    String url = apiProvider.baseUrl() + path;
+
+    String payload = "{ \"foo\": \"bar\" }";
+
+    String responseBodyStr = "{ \"hello\": \"there\" }";
+    apiProvider.stubFor(
+        post(urlMatching(path))
+            .willReturn(aResponse().withStatus(HttpStatus.OK.value()).withBody(responseBodyStr)));
+
+    // The StageExecutionImpl constructor mutates the map, so use a mutable map.
+    Map<String, Object> webhookStageData =
+        new HashMap<>(Map.of("url", url, "method", HttpMethod.POST, "payload", payload));
+    StageExecution stage =
+        new StageExecutionImpl(null, "webhook", "test-webhook-stage", webhookStageData);
+
+    ResponseEntity<Object> result = webhookService.callWebhook(stage);
+
+    assertThat(result).isNotNull();
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    var body = mapper.readValue(result.getBody().toString(), Map.class);
+    assertThat(body.get("hello")).isEqualTo("there");
+
+    apiProvider.verify(postRequestedFor(urlPathEqualTo(path)));
   }
 }

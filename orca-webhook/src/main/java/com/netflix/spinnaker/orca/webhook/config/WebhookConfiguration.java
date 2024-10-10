@@ -40,8 +40,12 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.*;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -68,6 +72,8 @@ import org.springframework.web.client.RestTemplate;
 public class WebhookConfiguration {
   private final WebhookProperties webhookProperties;
 
+  private final Logger log = LoggerFactory.getLogger(getClass());
+
   @Autowired
   public WebhookConfiguration(WebhookProperties webhookProperties) {
     this.webhookProperties = webhookProperties;
@@ -89,7 +95,8 @@ public class WebhookConfiguration {
   @Bean
   public ClientHttpRequestFactory webhookRequestFactory(
       OkHttpClientConfigurationProperties okHttpClientConfigurationProperties,
-      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions)
+      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
+      WebhookProperties webhookProperties)
       throws IOException {
     var trustManager = webhookX509TrustManager();
     var sslSocketFactory = getSSLSocketFactory(trustManager);
@@ -98,7 +105,12 @@ public class WebhookConfiguration {
             .sslSocketFactory(sslSocketFactory, trustManager)
             .addNetworkInterceptor(
                 chain -> {
-                  Response response = chain.proceed(chain.request());
+                  Request request = chain.request();
+                  if (!validRequestSize(request, webhookProperties.getMaxRequestBytes())) {
+                    chain.call().cancel();
+                  }
+
+                  Response response = chain.proceed(request);
 
                   if (webhookProperties.isVerifyRedirects() && response.isRedirect()) {
                     // verify that we are not redirecting to a restricted url
@@ -122,6 +134,60 @@ public class WebhookConfiguration {
     requestFactory.setConnectTimeout(
         Math.toIntExact(okHttpClientConfigurationProperties.getConnectTimeoutMs()));
     return requestFactory;
+  }
+
+  /** Return true if the request size is valid, false otherwise. */
+  private boolean validRequestSize(Request request, long maxRequestBytes) throws IOException {
+    if (maxRequestBytes <= 0L) {
+      return true;
+    }
+
+    long headerSize = request.headers().byteCount();
+
+    // If the headers are already too big, no need to deal with the body size
+    if (headerSize > maxRequestBytes) {
+      log.info(
+          "rejecting request to {} with {} byte(s) of headers, maxRequestBytes: {}",
+          request.url(),
+          headerSize,
+          maxRequestBytes);
+      return false;
+    }
+
+    RequestBody requestBody = request.body();
+    if (requestBody == null) {
+      return true;
+    }
+
+    long contentLength = 0L;
+    try {
+      contentLength = requestBody.contentLength();
+      if (contentLength == -1) {
+        // Given that OkHttp3ClientHttpRequestFactory.buildRequest (called by
+        // OkHttp3ClientRequest.executeInternal) has a byte array argument, this
+        // doesn't seem possible.  Reject the request in case it ends up being
+        // too big.  Yes, this is paranoid, but seems safer.
+        log.error(
+            "unable to verify size of body in request to {}, content length not set",
+            request.url());
+        return false;
+      }
+    } catch (IOException e) {
+      log.error("exception retrieving content length of request to {}", request.url(), e);
+      throw e;
+    }
+
+    long totalSize = headerSize + contentLength;
+    if (totalSize > maxRequestBytes) {
+      log.info(
+          "rejecting {} byte request to {}, maxRequestBytes: {}",
+          totalSize,
+          request.url(),
+          maxRequestBytes);
+      return false;
+    }
+
+    return true;
   }
 
   private X509TrustManager webhookX509TrustManager() {
