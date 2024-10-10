@@ -108,15 +108,11 @@ public class WebhookConfiguration {
             .addNetworkInterceptor(
                 chain -> {
                   Request request = chain.request();
-                  if (!validRequestSize(request, webhookProperties.getMaxRequestBytes())) {
-                    chain.call().cancel();
-                  }
+                  validateRequestSize(request, webhookProperties.getMaxRequestBytes());
 
                   Response response = chain.proceed(request);
 
-                  if (!validResponseSize(response, webhookProperties.getMaxResponseBytes())) {
-                    chain.call().cancel();
-                  }
+                  validateResponseSize(response, webhookProperties.getMaxResponseBytes());
 
                   if (webhookProperties.isVerifyRedirects() && response.isRedirect()) {
                     // verify that we are not redirecting to a restricted url
@@ -142,27 +138,27 @@ public class WebhookConfiguration {
     return requestFactory;
   }
 
-  /** Return true if the request size is valid, false otherwise. */
-  private boolean validRequestSize(Request request, long maxRequestBytes) throws IOException {
+  /** Return if the request size is valid. Throw an exception otherwise. */
+  private void validateRequestSize(Request request, long maxRequestBytes) throws IOException {
     if (maxRequestBytes <= 0L) {
-      return true;
+      return;
     }
 
     long headerSize = request.headers().byteCount();
 
     // If the headers are already too big, no need to deal with the body size
     if (headerSize > maxRequestBytes) {
-      log.info(
-          "rejecting request to {} with {} byte(s) of headers, maxRequestBytes: {}",
-          request.url(),
-          headerSize,
-          maxRequestBytes);
-      return false;
+      String message =
+          String.format(
+              "rejecting request to %s with %s byte(s) of headers, maxRequestBytes: %s",
+              request.url(), headerSize, maxRequestBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
     }
 
     RequestBody requestBody = request.body();
     if (requestBody == null) {
-      return true;
+      return;
     }
 
     long contentLength = 0L;
@@ -173,10 +169,12 @@ public class WebhookConfiguration {
         // OkHttp3ClientRequest.executeInternal) has a byte array argument, this
         // doesn't seem possible.  Reject the request in case it ends up being
         // too big.  Yes, this is paranoid, but seems safer.
-        log.error(
-            "unable to verify size of body in request to {}, content length not set",
-            request.url());
-        return false;
+        String message =
+            String.format(
+                "unable to verify size of body in request to %s, content length not set",
+                request.url());
+        log.error(message);
+        throw new IllegalStateException(message);
       }
     } catch (IOException e) {
       log.error("exception retrieving content length of request to {}", request.url(), e);
@@ -185,38 +183,36 @@ public class WebhookConfiguration {
 
     long totalSize = headerSize + contentLength;
     if (totalSize > maxRequestBytes) {
-      log.info(
-          "rejecting {} byte request to {}, maxRequestBytes: {}",
-          totalSize,
-          request.url(),
-          maxRequestBytes);
-      return false;
+      String message =
+          String.format(
+              "rejecting request to %s with %s byte body, maxRequestBytes: {}",
+              request.url(), totalSize, maxRequestBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
     }
-
-    return true;
   }
 
-  /** Return true if the response size is valid, false otherwise. */
-  private boolean validResponseSize(Response response, long maxResponseBytes) throws IOException {
+  /** Return if the response size is valid. Throw an exception otherwise. */
+  private void validateResponseSize(Response response, long maxResponseBytes) throws IOException {
     if (maxResponseBytes <= 0L) {
-      return true;
+      return;
     }
 
     long headerSize = response.headers().byteCount();
 
     // If the headers are already too big, no need to deal with the body size
     if (headerSize > maxResponseBytes) {
-      log.info(
-          "rejecting response from {} with {} byte(s) of headers, maxResponseBytes: {}",
-          response.request().url(),
-          headerSize,
-          maxResponseBytes);
-      return false;
+      String message =
+          String.format(
+              "rejecting response from %s with %s byte(s) of headers, maxResponseBytes: %s",
+              response.request().url(), headerSize, maxResponseBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
     }
 
     ResponseBody responseBody = response.body();
     if (responseBody == null) {
-      return true;
+      return;
     }
 
     long contentLength = responseBody.contentLength();
@@ -235,18 +231,17 @@ public class WebhookConfiguration {
         // Request one more than the number of allowed bytes remaining.  If that
         // succeeds, the response is too long.
         if (peeked.request(remainingAllowedBytes + 1)) {
-          log.info(
-              "rejecting response from {}. headers: {} byte(s), body > {} byte(s), maxResponseBytes: {}",
-              response.request().url(),
-              headerSize,
-              remainingAllowedBytes,
-              maxResponseBytes);
-          return false;
+          String message =
+              String.format(
+                  "rejecting response from %s. headers: %s byte(s), body > %s byte(s), maxResponseBytes: %s",
+                  response.request().url(), headerSize, remainingAllowedBytes, maxResponseBytes);
+          log.info(message);
+          throw new IllegalArgumentException(message);
         }
 
         // There aren't enough bytes in the response to satisfy the peek
         // request.  In other words, the response is short enough to be valid.
-        return true;
+        return;
       } catch (IOException e) {
         log.error("exception peeking into response from {}", response.request().url(), e);
         throw e;
@@ -255,15 +250,13 @@ public class WebhookConfiguration {
 
     long totalSize = headerSize + contentLength;
     if (totalSize > maxResponseBytes) {
-      log.info(
-          "rejecting {} byte response from {}, maxResponseBytes: {}",
-          totalSize,
-          response.request().url(),
-          maxResponseBytes);
-      return false;
+      String message =
+          String.format(
+              "rejecting %s byte response from %s, maxResponseBytes: %s",
+              totalSize, response.request().url(), maxResponseBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
     }
-
-    return true;
   }
 
   private X509TrustManager webhookX509TrustManager() {

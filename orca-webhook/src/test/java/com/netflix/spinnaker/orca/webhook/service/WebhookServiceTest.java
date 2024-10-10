@@ -35,7 +35,6 @@ import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.webhook.config.WebhookConfiguration;
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.web.client.ResourceAccessException;
 
 class WebhookServiceTest {
 
@@ -221,9 +219,8 @@ class WebhookServiceTest {
     Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
 
     assertThat(thrown)
-        .isInstanceOf(ResourceAccessException.class)
-        .hasRootCauseExactlyInstanceOf(IOException.class)
-        .hasRootCauseMessage("Canceled");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rejecting request to " + url);
 
     apiProvider.verify(0, RequestPatternBuilder.allRequests());
   }
@@ -246,9 +243,8 @@ class WebhookServiceTest {
     Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
 
     assertThat(thrown)
-        .isInstanceOf(ResourceAccessException.class)
-        .hasRootCauseExactlyInstanceOf(IOException.class)
-        .hasRootCauseMessage("Canceled");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rejecting request to " + url);
 
     apiProvider.verify(0, RequestPatternBuilder.allRequests());
   }
@@ -308,9 +304,8 @@ class WebhookServiceTest {
     Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
 
     assertThat(thrown)
-        .isInstanceOf(ResourceAccessException.class)
-        .hasRootCauseExactlyInstanceOf(IOException.class)
-        .hasRootCauseMessage("Canceled");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rejecting response from " + url);
 
     apiProvider.verify(getRequestedFor(urlPathEqualTo(path)));
   }
@@ -337,9 +332,8 @@ class WebhookServiceTest {
     Throwable thrown = catchThrowable(() -> webhookService.callWebhook(stage));
 
     assertThat(thrown)
-        .isInstanceOf(ResourceAccessException.class)
-        .hasRootCauseExactlyInstanceOf(IOException.class)
-        .hasRootCauseMessage("Canceled");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rejecting response from " + url);
 
     apiProvider.verify(getRequestedFor(urlPathEqualTo(path)));
   }
