@@ -78,6 +78,12 @@ public class WebhookProperties {
    */
   private long maxRequestBytes = 0L;
 
+  /**
+   * The maximum number of header + body bytes allowed in a webhook response, or <= 0 to allow any
+   * size.
+   */
+  private long maxResponseBytes = 0L;
+
   @Data
   @NoArgsConstructor
   public static class TrustSettings {

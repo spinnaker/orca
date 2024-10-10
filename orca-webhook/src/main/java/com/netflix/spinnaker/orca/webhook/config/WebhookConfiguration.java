@@ -43,6 +43,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +113,10 @@ public class WebhookConfiguration {
                   }
 
                   Response response = chain.proceed(request);
+
+                  if (!validResponseSize(response, webhookProperties.getMaxResponseBytes())) {
+                    chain.call().cancel();
+                  }
 
                   if (webhookProperties.isVerifyRedirects() && response.isRedirect()) {
                     // verify that we are not redirecting to a restricted url
@@ -184,6 +190,76 @@ public class WebhookConfiguration {
           totalSize,
           request.url(),
           maxRequestBytes);
+      return false;
+    }
+
+    return true;
+  }
+
+  /** Return true if the response size is valid, false otherwise. */
+  private boolean validResponseSize(Response response, long maxResponseBytes) throws IOException {
+    if (maxResponseBytes <= 0L) {
+      return true;
+    }
+
+    long headerSize = response.headers().byteCount();
+
+    // If the headers are already too big, no need to deal with the body size
+    if (headerSize > maxResponseBytes) {
+      log.info(
+          "rejecting response from {} with {} byte(s) of headers, maxResponseBytes: {}",
+          response.request().url(),
+          headerSize,
+          maxResponseBytes);
+      return false;
+    }
+
+    ResponseBody responseBody = response.body();
+    if (responseBody == null) {
+      return true;
+    }
+
+    long contentLength = responseBody.contentLength();
+    if (contentLength == -1) {
+      // Nothing has read the body yet.  This is the likely case.  Peek into the
+      // body to see if it's too long.  See okhttp.Response.peekBody for
+      // inspiration.  Note that e.g.
+      //
+      // contentLength = responseBody.bytes().length
+      //
+      // consumes the response such that future processing fails.  The underlying buffer is closed.
+      BufferedSource peeked = responseBody.source().peek();
+
+      long remainingAllowedBytes = maxResponseBytes - headerSize; // >= 0.  Yes, this could be 0.
+      try {
+        // Request one more than the number of allowed bytes remaining.  If that
+        // succeeds, the response is too long.
+        if (peeked.request(remainingAllowedBytes + 1)) {
+          log.info(
+              "rejecting response from {}. headers: {} byte(s), body > {} byte(s), maxResponseBytes: {}",
+              response.request().url(),
+              headerSize,
+              remainingAllowedBytes,
+              maxResponseBytes);
+          return false;
+        }
+
+        // There aren't enough bytes in the response to satisfy the peek
+        // request.  In other words, the response is short enough to be valid.
+        return true;
+      } catch (IOException e) {
+        log.error("exception peeking into response from {}", response.request().url(), e);
+        throw e;
+      }
+    }
+
+    long totalSize = headerSize + contentLength;
+    if (totalSize > maxResponseBytes) {
+      log.info(
+          "rejecting {} byte response from {}, maxResponseBytes: {}",
+          totalSize,
+          response.request().url(),
+          maxResponseBytes);
       return false;
     }
 
