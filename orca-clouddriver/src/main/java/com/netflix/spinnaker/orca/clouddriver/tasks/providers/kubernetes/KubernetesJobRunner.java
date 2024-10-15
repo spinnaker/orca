@@ -67,7 +67,17 @@ public class KubernetesJobRunner implements JobRunner {
 
     List<Map<Object, Object>> manifests = result.getManifests();
     if (manifests.size() != 1) {
-      throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
+      int numJobs = 0;
+      for (Map<Object, Object> manifest : manifests) {
+        String manifestKind = (String) manifest.get("kind");
+        if (manifestKind.toLowerCase() == "job") {
+          numJobs += 1;
+          if (numJobs > 1) {
+            throw new IllegalArgumentException(
+                "Run Job only supports manifests with a single Job.");
+          }
+        }
+      }
     }
 
     return ImmutableMap.of(
