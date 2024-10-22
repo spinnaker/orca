@@ -116,6 +116,11 @@ public class WebhookConfiguration {
 
                   if (response.isRedirect()) {
                     String redirectLocation = response.header("Location");
+                    if (!webhookProperties.isFollowRedirects()) {
+                      throw new IllegalStateException(
+                          "redirects disabled, not visiting " + redirectLocation);
+                    }
+
                     if (webhookProperties.isVerifyRedirects()) {
                       // verify that we are not redirecting to a restricted url
                       if (redirectLocation != null && !redirectLocation.trim().startsWith("/")) {
