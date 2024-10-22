@@ -114,11 +114,13 @@ public class WebhookConfiguration {
 
                   validateResponseSize(response, webhookProperties.getMaxResponseBytes());
 
-                  if (webhookProperties.isVerifyRedirects() && response.isRedirect()) {
-                    // verify that we are not redirecting to a restricted url
+                  if (response.isRedirect()) {
                     String redirectLocation = response.header("Location");
-                    if (redirectLocation != null && !redirectLocation.trim().startsWith("/")) {
-                      userConfiguredUrlRestrictions.validateURI(redirectLocation);
+                    if (webhookProperties.isVerifyRedirects()) {
+                      // verify that we are not redirecting to a restricted url
+                      if (redirectLocation != null && !redirectLocation.trim().startsWith("/")) {
+                        userConfiguredUrlRestrictions.validateURI(redirectLocation);
+                      }
                     }
                   }
 
