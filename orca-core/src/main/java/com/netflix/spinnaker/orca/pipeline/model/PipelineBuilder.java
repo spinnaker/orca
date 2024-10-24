@@ -32,6 +32,11 @@ public class PipelineBuilder {
     pipeline = PipelineExecutionImpl.newPipeline(application);
   }
 
+  public PipelineBuilder withMetadata(Map<String, Object> metadata) {
+    pipeline.setMetadata(metadata);
+    return this;
+  }
+
   public PipelineBuilder withIncludeAllowedAccounts(boolean includeAllowedAccounts) {
     this.includeAllowedAccounts = includeAllowedAccounts;
     return this;

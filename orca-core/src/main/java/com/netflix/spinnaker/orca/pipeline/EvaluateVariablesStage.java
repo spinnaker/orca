@@ -24,6 +24,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.tasks.EvaluateVariablesTask;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
@@ -76,6 +77,20 @@ public class EvaluateVariablesStage extends ExpressionAwareStageDefinitionBuilde
 
     EvaluateVariablesStageContext context = stage.mapTo(EvaluateVariablesStageContext.class);
     StageContext augmentedContext = contextParameterProcessor.buildExecutionContext(stage);
+
+    PipelineExecutionImpl pipelineExecution =
+        (PipelineExecutionImpl) augmentedContext.get("execution");
+    // Evaluate spel expressions on pipeline.metadata so that they are resolved before evaluating at
+    // stage level.
+    // This is needed for in case pipeline.metadata is referenced at stage level.
+    Map<String, Object> evaluatedPipelineMetadata =
+        contextParameterProcessor.process(
+            mapper.convertValue(
+                pipelineExecution.getMetadata(), new TypeReference<Map<String, Object>>() {}),
+            augmentedContext,
+            true);
+    pipelineExecution.setMetadata(evaluatedPipelineMetadata);
+
     Map<String, Object> varSourceToEval = new HashMap<>();
     int lastFailedCount = 0;
 

@@ -34,6 +34,10 @@ public interface PipelineExecution {
   @Nonnull
   ExecutionType getType();
 
+  Map<String, Object> getMetadata();
+
+  void setMetadata(Map<String, Object> metadata);
+
   String getId();
 
   void setId(String id);
