@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.applications.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -27,7 +29,6 @@ import com.netflix.spinnaker.orca.KeelService
 import groovy.util.logging.Slf4j
 import org.springframework.lang.Nullable
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
 
 @Slf4j
 @Component
@@ -74,11 +75,14 @@ class DeleteApplicationTask extends AbstractFront50Task {
         front50Service.delete(application.name)
         try {
           front50Service.deletePermission(application.name)
-        } catch (RetrofitError re) {
-          if (re.response?.status == 404) {
+        } catch (SpinnakerHttpException re) {
+          if (re.responseCode == 404) {
             return TaskResult.SUCCEEDED
           }
           log.error("Could not delete application permission", re)
+          return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
+        } catch (SpinnakerServerException e){
+          log.error("Could not delete application permission", e)
           return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
         }
         // delete Managed Delivery data
@@ -87,11 +91,14 @@ class DeleteApplicationTask extends AbstractFront50Task {
           keelService.deleteDeliveryConfig(application.name)
         }
       }
-    } catch (RetrofitError e) {
-      if (e.response?.status == 404) {
+    } catch (SpinnakerHttpException httpException){
+      if (httpException.responseCode == 404) {
         return TaskResult.SUCCEEDED
       }
-      log.error("Could not delete application", e)
+      log.error("Could not delete application", httpException)
+      return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
+    } catch (SpinnakerServerException serverException) {
+      log.error("Could not delete application", serverException)
       return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
     }
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(outputs).build()

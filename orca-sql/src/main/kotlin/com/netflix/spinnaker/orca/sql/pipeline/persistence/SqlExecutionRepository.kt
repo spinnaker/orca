@@ -16,6 +16,8 @@
 package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.annotations.VisibleForTesting
+import com.netflix.spinnaker.config.ExecutionCompressionProperties
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.kork.exceptions.SystemException
@@ -31,6 +33,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATIO
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
 import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
@@ -52,6 +55,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineExcept
 import de.huxhorn.sulky.ulid.SpinULID
 import java.lang.System.currentTimeMillis
 import java.security.SecureRandom
+import java.time.Duration
 import org.jooq.DSLContext
 import org.jooq.DatePart
 import org.jooq.Field
@@ -75,6 +79,8 @@ import org.jooq.impl.DSL.timestampSub
 import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
 import rx.Observable
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 
 /**
  * A generic SQL [ExecutionRepository].
@@ -91,7 +97,9 @@ class SqlExecutionRepository(
   private val stageReadSize: Int = 200,
   private val poolName: String = "default",
   private val interlink: Interlink? = null,
-  private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList()
+  private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
+  private val compressionProperties: ExecutionCompressionProperties,
+  private val pipelineRefEnabled: Boolean
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -383,7 +391,7 @@ class SqlExecutionRepository(
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
-        fields = selectFields() + field("status"),
+        fields = selectExecutionFields(compressionProperties) + field("status"),
         conditions = {
           if (partition.isNullOrEmpty()) {
             it.statusIn(criteria.statuses)
@@ -509,7 +517,7 @@ class SqlExecutionRepository(
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
-      val execution = jooq.selectExecution(ORCHESTRATION)
+      val execution = jooq.selectExecution(ORCHESTRATION, compressionProperties)
         .where(
           field("id").eq(
             field(
@@ -537,7 +545,7 @@ class SqlExecutionRepository(
 
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
-      val execution = jooq.selectExecution(PIPELINE)
+      val execution = jooq.selectExecution(PIPELINE, compressionProperties)
         .where(
           field("id").eq(
             field(
@@ -654,36 +662,53 @@ class SqlExecutionRepository(
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
     withPool(poolName) {
-      val select = jooq.selectExecutions(
-        PIPELINE,
-        conditions = {
-          var conditions = it.where(
+      val select = jooq.select(selectExecutionFields(compressionProperties))
+        .from(PIPELINE.tableName)
+        .join(
+          jooq.selectExecutions(
+          PIPELINE,
+          fields = if (compressionProperties.enabled)
+            listOf(field("id")) + field("compressed_body") + field("compression_type")
+          else
+            listOf(field("id")),
+          conditions = {
+            var conditions = it.where(
             field("config_id").`in`(*pipelineConfigIds.toTypedArray())
               .and(field("build_time").gt(buildTimeStartBoundary))
               .and(field("build_time").lt(buildTimeEndBoundary))
+            )
+
+            if (executionCriteria.statuses.isNotEmpty()) {
+              val statusStrings = executionCriteria.statuses.map { it.toString() }
+              conditions = conditions.and(field("status").`in`(*statusStrings.toTypedArray()))
+            }
+
+            conditions
+                       },
+          seek = {
+            val seek = when (executionCriteria.sortType) {
+              ExecutionComparator.BUILD_TIME_ASC -> it.orderBy(field("build_time").asc())
+              ExecutionComparator.BUILD_TIME_DESC -> it.orderBy(field("build_time").desc())
+              ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
+              ExecutionComparator.NATURAL_ASC -> it.orderBy(field("id").desc())
+              else -> it.orderBy(field("id").asc())
+            }
+            seek
+              .limit(executionCriteria.pageSize)
+              .offset((executionCriteria.page - 1) * executionCriteria.pageSize)
+          }
           )
-
-          if (executionCriteria.statuses.isNotEmpty()) {
-            val statusStrings = executionCriteria.statuses.map { it.toString() }
-            conditions = conditions.and(field("status").`in`(*statusStrings.toTypedArray()))
+        )
+        .using(field("id"))
+        .orderBy(
+          when (executionCriteria.sortType) {
+            ExecutionComparator.BUILD_TIME_ASC -> field("build_time").asc()
+            ExecutionComparator.BUILD_TIME_DESC -> field("build_time").desc()
+            ExecutionComparator.START_TIME_OR_ID -> field("start_time").desc()
+            ExecutionComparator.NATURAL_ASC -> field("id").desc()
+            else -> field("id").asc()
           }
-
-          conditions
-        },
-        seek = {
-          val seek = when (executionCriteria.sortType) {
-            ExecutionComparator.BUILD_TIME_ASC -> it.orderBy(field("build_time").asc())
-            ExecutionComparator.BUILD_TIME_DESC -> it.orderBy(field("build_time").desc())
-            ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
-            ExecutionComparator.NATURAL_ASC -> it.orderBy(field("id").desc())
-            else -> it.orderBy(field("id").asc())
-          }
-          seek
-            .limit(executionCriteria.pageSize)
-            .offset((executionCriteria.page - 1) * executionCriteria.pageSize)
-        }
-      )
-
+        )
       return select.fetchExecutions().toList()
     }
   }
@@ -761,6 +786,7 @@ class SqlExecutionRepository(
   private fun storeExecutionInternal(ctx: DSLContext, execution: PipelineExecution, storeStages: Boolean = false) {
     validateHandledPartitionOrThrow(execution)
 
+    execution.trigger = mapper.convertValue(execution.trigger, Trigger::class.java)
     val stages = execution.stages.toMutableList().toList()
     execution.stages.clear()
 
@@ -769,6 +795,9 @@ class SqlExecutionRepository(
       val stageTableName = execution.type.stagesTableName
       val status = execution.status.toString()
       val body = mapper.writeValueAsString(execution)
+      val bodySize = body.length.toLong()
+      execution.setSize(bodySize)
+      log.debug("application ${execution.application}, pipeline name: ${execution.name}, pipeline config id ${execution.pipelineConfigId}, pipeline execution id ${execution.id}, execution size: ${bodySize}")
 
       val (executionId, legacyId) = mapLegacyId(ctx, tableName, execution.id, execution.startTime)
 
@@ -807,14 +836,16 @@ class SqlExecutionRepository(
           execution.type.tableName,
           insertPairs.plus(field("config_id") to execution.pipelineConfigId),
           updatePairs.plus(field("config_id") to execution.pipelineConfigId),
-          executionId
+          executionId,
+          compressionProperties.isWriteEnabled()
         )
         ORCHESTRATION -> upsert(
           ctx,
           execution.type.tableName,
           insertPairs,
           updatePairs,
-          executionId
+          executionId,
+          compressionProperties.isWriteEnabled()
         )
       }
 
@@ -856,6 +887,10 @@ class SqlExecutionRepository(
     val stageTable = stage.execution.type.stagesTableName
     val table = stage.execution.type.tableName
     val body = mapper.writeValueAsString(stage)
+    val bodySize = body.length.toLong()
+    stage.setSize(bodySize)
+    log.debug("application ${stage.execution.application}, pipeline name: ${stage.execution.name}, pipeline config id ${stage.execution.pipelineConfigId}, pipeline execution id ${stage.execution.id}, stage name: ${stage.name}, stage id: ${stage.id}, size: ${bodySize}")
+
     val buildTime = stage.execution.buildTime
 
     val executionUlid = executionId ?: mapLegacyId(ctx, table, stage.execution.id, buildTime).first
@@ -876,7 +911,7 @@ class SqlExecutionRepository(
       field("body") to body
     )
 
-    upsert(ctx, stageTable, insertPairs, updatePairs, stage.id)
+    upsert(ctx, stageTable, insertPairs, updatePairs, stage.id, compressionProperties.isWriteEnabled())
 
     // This method is called from [storeInternal] as well. We don't want to notify multiple times for the same
     // overall persist operation.
@@ -893,27 +928,127 @@ class SqlExecutionRepository(
       }
 
       withPool(poolName) {
-        val exists = ctx.fetchExists(
-          ctx.select()
-            .from("correlation_ids")
-            .where(field("id").eq(execution.trigger.correlationId))
-            .and(executionIdField.eq(execution.id))
-        )
-        if (!exists) {
-          ctx.insertInto(table("correlation_ids"))
-            .columns(field("id"), executionIdField)
-            .values(execution.trigger.correlationId, execution.id)
-            .execute()
-        }
+        ctx.insertInto(table("correlation_ids"))
+          .columns(field("id"), executionIdField)
+          .values(execution.trigger.correlationId, execution.id)
+          .onConflict()
+          .doNothing()
+          .execute()
       }
     }
   }
 
-  private fun upsert(
+  /***
+   * Compresses the provided body string and returns the generated byte array
+   *
+   * @param id: pipelines/orchestration/stage id the body belongs to
+   * @param body: body string to be compressed
+   *
+   * @return byte array representing the compressed string
+   */
+  @VisibleForTesting
+  internal fun getCompressedBody(id: String, body: String): ByteArray? {
+
+    var compressedBody: ByteArray? = null
+
+    if (body.length <= compressionProperties.bodyCompressionThreshold) {
+      log.debug("Body length ${body.length} for execution of $id does not breach " +
+        "the compression threshold ${compressionProperties.bodyCompressionThreshold}. " +
+        "No need to compress.")
+    } else {
+      log.info("Body length ${body.length} for execution of $id breaches the compression " +
+        "threshold ${compressionProperties.bodyCompressionThreshold}")
+      log.debug("Performing large body compression for $id.")
+      val compressedBodyByteStream = ByteArrayOutputStream()
+      val zipBeginTS = currentTimeMillis()
+      compressionProperties.compressionType
+        .getDeflator(compressedBodyByteStream)
+        .bufferedWriter(StandardCharsets.UTF_8)
+        .use { it.write(body, 0, body.length) }
+      compressedBody = compressedBodyByteStream.toByteArray()
+      val zipEndTS = currentTimeMillis()
+      log.info("Compression complete for $id. Uncompressed body length: ${body.length} " +
+        "Compressed body length: ${compressedBody.size} " +
+        "Compression ratio: ${body.length.toDouble() / compressedBody.size} " +
+        "Compression time(ms): ${zipEndTS - zipBeginTS} ")
+    }
+
+    return compressedBody
+  }
+
+  /**
+   * Upserts the provided insert/update execution pairs into the provided table for the given id
+   * and conditionally upserts the compressed execution into the corresponding compressed_execution
+   * table
+   *
+   * @param ctx [DSLContext] to use for perfroming the upsertion
+   * @param table [Table] to upsert into
+   * @param insertPairs map of field value pairs to be inserted into the table
+   * @param updatePairs map of field value pairs to be updated in the table
+   * @param id id to be used for record upsertion
+   * @param enableCompression flag controlling execution body compression
+   */
+  @VisibleForTesting
+  internal fun upsert(
     ctx: DSLContext,
     table: Table<Record>,
     insertPairs: Map<Field<Any?>, Any?>,
-    updatePairs: Map<Field<Any>, Any?>,
+    updatePairs: Map<Field<Any?>, Any?>,
+    id: String,
+    enableCompression: Boolean
+  ) {
+
+    val bodyField = field("body")
+    val body = insertPairs[bodyField] as String
+    val updatedInsertPairs = insertPairs.toMutableMap()
+    val updatedUpdatePairs = updatePairs.toMutableMap()
+
+    var compressedExecTablePairs: Map<Field<Any?>, Any?> = mapOf()
+    var isBodyCompressed = false
+
+    if (enableCompression) {
+      // Conditionally handle body compression
+      log.debug("Attempting to compress the body before upsertion into ${table.name} with id $id")
+      val compressedBody = getCompressedBody(id, body)
+
+      if (compressedBody != null) {
+        // Set uncompressed body to empty string since body is not a nullable column
+        updatedInsertPairs[bodyField] = ""
+        updatedUpdatePairs[bodyField] = ""
+        compressedExecTablePairs = mapOf(
+          field("id") to id,
+          field("compressed_body") to compressedBody,
+          field("compression_type") to compressionProperties.compressionType.type
+        )
+        isBodyCompressed = true
+      }
+    }
+
+    log.info("Upserting execution into the ${table.name} table with id $id")
+    upsert(ctx,
+      table,
+      updatedInsertPairs,
+      updatedUpdatePairs,
+      id)
+
+    if (isBodyCompressed) {
+      val compressedExecTable = table.compressedExecTable
+      log.info("Upserting compressed execution into the ${compressedExecTable.name} table " +
+        "with id $id")
+      upsert(ctx,
+        table.compressedExecTable,
+        compressedExecTablePairs,
+        compressedExecTablePairs,
+        id)
+    }
+  }
+
+  @VisibleForTesting
+  internal fun upsert(
+    ctx: DSLContext,
+    table: Table<Record>,
+    insertPairs: Map<Field<Any?>, Any?>,
+    updatePairs: Map<Field<Any?>, Any?>,
     updateId: String
   ) {
     // MySQL & PG support upsert concepts. A nice little efficiency here, we
@@ -978,7 +1113,7 @@ class SqlExecutionRepository(
     forUpdate: Boolean = false
   ): PipelineExecution? {
     withPool(poolName) {
-      val select = ctx.selectExecution(type).where(id.toWhereCondition())
+      val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
       if (forUpdate) {
         select.forUpdate()
       }
@@ -997,12 +1132,16 @@ class SqlExecutionRepository(
         type,
         conditions = {
           if (cursor == null) {
-            it.where("1=1")
+            if (where == null) {
+              it.where("1=1")
+            } else {
+              where(it)
+            }
           } else {
             if (where == null) {
-              it.where(field("id").gt(cursor))
+              it.where(field("id").lt(cursor))
             } else {
-              where(it).and(field("id").gt(cursor))
+              where(it).and(field("id").lt(cursor))
             }
           }
         },
@@ -1026,42 +1165,47 @@ class SqlExecutionRepository(
           fn(DSL.using(ctx))
         }
       },
-      retryProperties.maxRetries, retryProperties.backoffMs, false
+      retryProperties.maxRetries, Duration.ofMillis(retryProperties.backoffMs), false
     )
   }
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(compressionProperties),
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
-  ) =
-    select(fields)
-      .from(type.tableName)
+  ): SelectForUpdateStep<out Record> {
+     val selectFrom = select(fields).from(type.tableName)
+
+    if (compressionProperties.enabled) {
+      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+    }
+
+    return selectFrom
       .let { conditions(it) }
       .let { seek(it) }
+  }
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(compressionProperties),
     usingIndex: String,
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
-  ) =
-    select(fields)
-      .from(if (jooq.dialect() == SQLDialect.MYSQL) type.tableName.forceIndex(usingIndex) else type.tableName)
+  ): SelectForUpdateStep<out Record> {
+     val selectFrom = select(fields).from(if (jooq.dialect() == SQLDialect.MYSQL) type.tableName.forceIndex(usingIndex) else type.tableName)
+
+    if (compressionProperties.enabled) {
+      selectFrom.leftJoin(type.tableName.compressedExecTable).using(field("id"))
+    }
+
+    return selectFrom
       .let { conditions(it) }
       .let { seek(it) }
-
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()) =
-    select(fields)
-      .from(type.tableName)
-
-  private fun selectFields() =
-    listOf(field("id"), field("body"), field(name("partition")))
+  }
 
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize).map(fetch().intoResultSet(), jooq)
+    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq)
 
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()

@@ -24,8 +24,8 @@ dependencies {
   testImplementation("org.spockframework:spock-core")
   testImplementation("cglib:cglib-nodep")
   testImplementation("org.objenesis:objenesis")
-  testImplementation("org.codehaus.groovy:groovy")
-  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+  testImplementation("org.apache.groovy:groovy")
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
 tasks.compileGroovy.enabled = false

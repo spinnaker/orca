@@ -63,6 +63,7 @@ dependencies {
   implementation("net.logstash.logback:logstash-logback-encoder")
   implementation("io.spinnaker.fiat:fiat-api:$fiatVersion")
   implementation("io.spinnaker.fiat:fiat-core:$fiatVersion")
+  implementation("io.spinnaker.kork:kork-retrofit")
 
   runtimeOnly("io.spinnaker.kork:kork-runtime")
 
@@ -92,6 +93,7 @@ dependencies {
   testImplementation("dev.minutest:minutest")
   testImplementation("io.strikt:strikt-core")
   testImplementation("io.mockk:mockk")
+  testImplementation("org.apache.groovy:groovy-json")
 }
 
 test {

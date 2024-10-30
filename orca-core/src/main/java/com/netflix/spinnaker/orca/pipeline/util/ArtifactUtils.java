@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
@@ -49,7 +48,6 @@ import java.util.stream.Stream;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,31 +139,7 @@ public class ArtifactUtils {
         contextParameterProcessor.process(
             boundArtifactMap, contextParameterProcessor.buildExecutionContext(stage), true);
 
-    Artifact evaluatedArtifact =
-        objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
-    return getBoundInlineArtifact(evaluatedArtifact, stage.getExecution())
-        .orElse(evaluatedArtifact);
-  }
-
-  private Optional<Artifact> getBoundInlineArtifact(
-      @Nullable Artifact artifact, PipelineExecution execution) {
-    if (ObjectUtils.anyNull(
-        artifact, execution.getTrigger(), execution.getTrigger().getArtifacts())) {
-      return Optional.empty();
-    }
-    try {
-      ExpectedArtifact expectedArtifact =
-          ExpectedArtifact.builder().matchArtifact(artifact).build();
-      return ArtifactResolver.getInstance(execution.getTrigger().getArtifacts(), true)
-          .resolveExpectedArtifacts(List.of(expectedArtifact))
-          .getResolvedExpectedArtifacts()
-          .stream()
-          .findFirst()
-          .flatMap(this::getBoundArtifact);
-    } catch (InvalidRequestException e) {
-      log.debug("Could not match inline artifact with trigger bound artifacts", e);
-      return Optional.empty();
-    }
+    return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
   }
 
   public @Nullable Artifact getBoundArtifactForId(StageExecution stage, @Nullable String id) {

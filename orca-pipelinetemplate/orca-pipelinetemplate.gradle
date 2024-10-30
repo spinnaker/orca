@@ -10,7 +10,7 @@ dependencies {
   implementation("com.hubspot.jinjava:jinjava")
   implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-  implementation("com.jayway.jsonpath:json-path:2.2.0")
+  implementation("com.jayway.jsonpath:json-path")
   implementation("org.slf4j:slf4j-api")
   implementation("org.springframework.boot:spring-boot-autoconfigure")
   implementation("org.springframework:spring-context")
@@ -27,7 +27,9 @@ dependencies {
   annotationProcessor("org.projectlombok:lombok")
 
   testImplementation("org.slf4j:slf4j-simple")
-  testImplementation("org.spockframework:spock-unitils")
-  testImplementation("org.codehaus.groovy:groovy-json")
+  testImplementation("org.assertj:assertj-core")
+  testImplementation("org.apache.groovy:groovy-json")
   testImplementation("io.spinnaker.fiat:fiat-core:$fiatVersion")
+  testImplementation("io.spinnaker.kork:kork-retrofit")
+  testRuntimeOnly("net.bytebuddy:byte-buddy")
 }

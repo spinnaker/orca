@@ -23,11 +23,15 @@ import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.lock.RunOnLockAcquired
 import com.netflix.spinnaker.orca.lock.RunOnShedLockAcquired
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.notifications.SqlNotificationClusterLock
+import com.netflix.spinnaker.orca.pipeline.model.support.CustomTriggerDeserializerSupplier
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
 import com.netflix.spinnaker.orca.sql.SpringLiquibaseProxy
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
@@ -52,7 +56,7 @@ import javax.sql.DataSource
 
 @Configuration
 @ConditionalOnProperty("sql.enabled")
-@EnableConfigurationProperties(OrcaSqlProperties::class)
+@EnableConfigurationProperties(OrcaSqlProperties::class, ExecutionCompressionProperties::class, PipelineRefProperties::class)
 @Import(DefaultSqlConfiguration::class)
 @ComponentScan("com.netflix.spinnaker.orca.sql")
 
@@ -72,7 +76,9 @@ class SqlConfiguration {
     properties: SqlProperties,
     orcaSqlProperties: OrcaSqlProperties,
     interlink: Optional<Interlink>,
-    executionRepositoryListeners: Collection<ExecutionRepositoryListener>
+    executionRepositoryListeners: Collection<ExecutionRepositoryListener>,
+    compressionProperties: ExecutionCompressionProperties,
+    pipelineRefProperties: PipelineRefProperties
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -82,7 +88,9 @@ class SqlConfiguration {
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
       interlink = interlink.orElse(null),
-      executionRepositoryListeners = executionRepositoryListeners
+      executionRepositoryListeners = executionRepositoryListeners,
+      compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefProperties.enabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
@@ -95,7 +103,9 @@ class SqlConfiguration {
     registry: Registry,
     properties: SqlProperties,
     orcaSqlProperties: OrcaSqlProperties,
-    @Value("\${execution-repository.sql.secondary.pool-name}") poolName: String
+    @Value("\${execution-repository.sql.secondary.pool-name}") poolName: String,
+    compressionProperties: ExecutionCompressionProperties,
+    pipelineRefProperties: PipelineRefProperties
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -104,7 +114,9 @@ class SqlConfiguration {
       properties.retries.transactions,
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
-      poolName
+      poolName,
+      compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefProperties.enabled
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }
@@ -157,4 +169,14 @@ class SqlConfiguration {
   fun lockProvider(datasource: DataSource): LockProvider {
     return JdbcTemplateLockProvider(datasource)
   }
+
+  @Bean
+  fun pipelineRefTriggerDeserializer(
+    pipelineRefProperties: PipelineRefProperties
+  ): CustomTriggerDeserializerSupplier {
+    val customTrigger = PipelineRefTriggerDeserializerSupplier(pipelineRefProperties.enabled)
+    TriggerDeserializer.customTriggerSuppliers.add(customTrigger)
+    return customTrigger
+  }
+
 }

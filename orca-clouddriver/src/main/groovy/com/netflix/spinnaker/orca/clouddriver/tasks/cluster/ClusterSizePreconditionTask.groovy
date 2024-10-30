@@ -19,6 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
@@ -96,18 +98,23 @@ class ClusterSizePreconditionTask implements CloudProviderAware, RetryableTask, 
     def response
     try {
       response = oortService.getCluster(config.application, credentials, config.cluster, cloudProvider)
-    } catch (RetrofitError re) {
-      if (re.kind == RetrofitError.Kind.HTTP && re.response.status == 404) {
+    } catch (SpinnakerHttpException spinnakerHttpException) {
+      if (spinnakerHttpException.getResponseCode() == 404) {
         return [:]
       }
-      throw re
+      throw spinnakerHttpException
     }
-
+    /**
+     * @see {@link com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration#oortDeployService(com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration.ClouddriverRetrofitBuilder)}
+     * it uses {@link com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler} and the internal logic of constructing the conversion exception is by wrapping the {@link RetrofitError}.
+     * In the same way the below {@link ConversionException} is wrapped into {@link com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException} for time being.
+     * This logic will remain until the {@link OortService} configurations are migrated/modified to retrofit 2.x, the same is applicable to below {@link JacksonConverter} as well.
+     * **/
     JacksonConverter converter = new JacksonConverter(objectMapper)
     try {
       return (Cluster) converter.fromBody(response.body, Cluster)
     } catch (ConversionException ce) {
-      throw RetrofitError.conversionError(response.url, response, converter, Cluster, ce)
+      throw new SpinnakerConversionException(RetrofitError.conversionError(response.url, response, converter, Cluster, ce))
     }
   }
 
@@ -152,7 +159,7 @@ class ClusterSizePreconditionTask implements CloudProviderAware, RetryableTask, 
     private final String value
     private final Closure<Boolean> closure
 
-    public Operator(String value, Closure<Boolean> closure) {
+    private Operator(String value, Closure<Boolean> closure) {
       this.value = value
       this.closure = closure
     }

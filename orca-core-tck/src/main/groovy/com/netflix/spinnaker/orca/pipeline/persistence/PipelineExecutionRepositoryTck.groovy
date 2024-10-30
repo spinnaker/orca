@@ -22,7 +22,10 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
+import com.netflix.spinnaker.orca.sql.pipeline.persistence.PipelineRefTrigger
 import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Subject
@@ -550,6 +553,28 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     status << ExecutionStatus.values()
   }
 
+  def "should return task ref for currently running pipeline by correlation id"() {
+    given:
+    def execution = pipeline {
+      trigger = new DefaultTrigger("manual", "covfefe")
+    }
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
+
+    when:
+    def result = repository().retrievePipelineForCorrelationId('covfefe')
+
+    then:
+    result.id == execution.id
+
+    when:
+    repository().updateStatus(execution.type, execution.id, SUCCEEDED)
+    repository().retrievePipelineForCorrelationId('covfefe')
+
+    then:
+    thrown(ExecutionNotFoundException)
+  }
+
   def "should return task ref for currently running orchestration by correlation id"() {
     given:
     def execution = orchestration {
@@ -574,6 +599,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   def "parses the parent execution of a pipeline trigger"() {
     given:
+    TriggerDeserializer.customTriggerSuppliers.clear()
     def execution = pipeline {
       trigger = new PipelineTrigger(pipeline())
     }

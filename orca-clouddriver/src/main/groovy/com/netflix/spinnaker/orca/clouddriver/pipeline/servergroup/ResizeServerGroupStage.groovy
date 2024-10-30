@@ -16,11 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ModifyAwsScalingProcessStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CheckIfApplicationExistsForServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityMatchTask
@@ -37,11 +39,12 @@ import org.springframework.stereotype.Component
 @Component
 @Slf4j
 class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
-  public static final String TYPE = getType(ResizeServerGroupStage)
+  public static final String TYPE = StageDefinitionBuilder.getType(ResizeServerGroupStage)
 
   @Override
   protected void taskGraphInternal(StageExecution stage, TaskNode.Builder builder) {
     builder
+      .withTask(CheckIfApplicationExistsForServerGroupTask.getTaskName(), CheckIfApplicationExistsForServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
       .withTask("resizeServerGroup", ResizeServerGroupTask)
       .withTask("monitorServerGroup", MonitorKatoTask)

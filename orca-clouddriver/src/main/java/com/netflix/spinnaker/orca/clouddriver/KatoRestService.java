@@ -10,6 +10,7 @@ import retrofit.client.Response;
 import retrofit.http.Body;
 import retrofit.http.DELETE;
 import retrofit.http.GET;
+import retrofit.http.PATCH;
 import retrofit.http.POST;
 import retrofit.http.Path;
 import retrofit.http.Query;
@@ -39,6 +40,17 @@ public interface KatoRestService {
       @Path("operationName") String operationName,
       @Body OperationContext operation);
 
+  @PATCH("/{cloudProvider}/task/{id}")
+  TaskId updateTask(
+      @Path("cloudProvider") String cloudProvider, @Path("id") String id, @Body Map details);
+
+  @POST("/{cloudProvider}/task/{id}/restart")
+  @Retry(name = "katoRetrofitServiceWriter")
+  TaskId restartTaskViaOperations(
+      @Path("cloudProvider") String cloudProvider,
+      @Path("id") String id,
+      @Body Collection<? extends Map<String, Map>> operations);
+
   @GET("/applications/{app}/jobs/{account}/{region}/{id}")
   Response collectJob(
       @Path("app") String app,
@@ -59,6 +71,14 @@ public interface KatoRestService {
       @Path("account") String account,
       @Path("region") String region,
       @Path("id") String id,
+      @Path("fileName") String fileName);
+
+  @GET("/applications/{app}/kubernetes/pods/{account}/{namespace}/{podName}/{fileName}")
+  Map<String, Object> getFileContentsFromKubernetesPod(
+      @Path("app") String app,
+      @Path("account") String account,
+      @Path("namespace") String namespace,
+      @Path("podName") String podName,
       @Path("fileName") String fileName);
 
   /**
