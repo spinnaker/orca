@@ -17,6 +17,8 @@
 
 package com.netflix.spinnaker.orca.webhook.config;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import com.netflix.spinnaker.kork.crypto.TrustStores;
 import com.netflix.spinnaker.kork.crypto.X509Identity;
 import com.netflix.spinnaker.kork.crypto.X509IdentitySource;
@@ -110,9 +112,28 @@ public class WebhookConfiguration {
             .addNetworkInterceptor(
                 chain -> {
                   Request request = chain.request();
+
+                  if (webhookProperties.isAuditLoggingEnabled()) {
+                    log.info(
+                        "sending webhook request: {},{}",
+                        kv("httpMethod", request.method()),
+                        kv("url", request.url()));
+                  }
+
                   validateRequestSize(request, webhookProperties.getMaxRequestBytes());
 
                   Response response = chain.proceed(request);
+
+                  if (webhookProperties.isAuditLoggingEnabled()) {
+                    log.info(
+                        "received webhook response: {},{},{},{}",
+                        kv("httpMethod", response.request().method()),
+                        kv("url", response.request().url()),
+                        kv("responseCode", response.code()),
+                        kv(
+                            "latencyMs",
+                            response.receivedResponseAtMillis() - response.sentRequestAtMillis()));
+                  }
 
                   validateResponseSize(response, webhookProperties.getMaxResponseBytes());
 
