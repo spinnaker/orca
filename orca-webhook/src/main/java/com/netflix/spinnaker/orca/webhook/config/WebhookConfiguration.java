@@ -20,7 +20,6 @@ package com.netflix.spinnaker.orca.webhook.config;
 import com.netflix.spinnaker.kork.crypto.TrustStores;
 import com.netflix.spinnaker.kork.crypto.X509Identity;
 import com.netflix.spinnaker.kork.crypto.X509IdentitySource;
-import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.webhook.util.UnionX509TrustManager;
 import java.io.FileInputStream;
@@ -96,7 +95,6 @@ public class WebhookConfiguration {
 
   @Bean
   public ClientHttpRequestFactory webhookRequestFactory(
-      OkHttpClientConfigurationProperties okHttpClientConfigurationProperties,
       UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
       WebhookProperties webhookProperties)
       throws IOException {
@@ -138,10 +136,8 @@ public class WebhookConfiguration {
 
     var client = builder.build();
     var requestFactory = new OkHttp3ClientHttpRequestFactory(client);
-    requestFactory.setReadTimeout(
-        Math.toIntExact(okHttpClientConfigurationProperties.getReadTimeoutMs()));
-    requestFactory.setConnectTimeout(
-        Math.toIntExact(okHttpClientConfigurationProperties.getConnectTimeoutMs()));
+    requestFactory.setReadTimeout(Math.toIntExact(webhookProperties.getReadTimeoutMs()));
+    requestFactory.setConnectTimeout(Math.toIntExact(webhookProperties.getConnectTimeoutMs()));
     return requestFactory;
   }
 

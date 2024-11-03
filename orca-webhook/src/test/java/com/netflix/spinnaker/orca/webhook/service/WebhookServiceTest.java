@@ -30,7 +30,6 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
-import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
@@ -60,9 +59,6 @@ class WebhookServiceTest {
 
   private WebhookProperties webhookProperties = new WebhookProperties();
 
-  private OkHttpClientConfigurationProperties okHttpClientConfigurationProperties =
-      new OkHttpClientConfigurationProperties();
-
   private WebhookConfiguration webhookConfiguration = new WebhookConfiguration(webhookProperties);
 
   private UserConfiguredUrlRestrictions userConfiguredUrlRestrictions =
@@ -79,7 +75,7 @@ class WebhookServiceTest {
 
     ClientHttpRequestFactory requestFactory =
         webhookConfiguration.webhookRequestFactory(
-            okHttpClientConfigurationProperties, userConfiguredUrlRestrictions, webhookProperties);
+            userConfiguredUrlRestrictions, webhookProperties);
 
     RestTemplateProvider restTemplateProvider =
         new DefaultRestTemplateProvider(webhookConfiguration.restTemplate(requestFactory));
