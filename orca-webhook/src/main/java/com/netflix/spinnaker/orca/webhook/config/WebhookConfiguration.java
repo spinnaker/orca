@@ -203,7 +203,7 @@ public class WebhookConfiguration {
     if (totalSize > maxRequestBytes) {
       String message =
           String.format(
-              "rejecting request to %s with %s byte body, maxRequestBytes: {}",
+              "rejecting request to %s with %s byte body, maxRequestBytes: %s",
               request.url(), totalSize, maxRequestBytes);
       log.info(message);
       throw new IllegalArgumentException(message);
