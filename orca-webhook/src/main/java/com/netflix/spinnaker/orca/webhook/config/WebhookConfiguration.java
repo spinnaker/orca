@@ -117,9 +117,10 @@ public class WebhookConfiguration {
 
                   if (webhookProperties.isAuditLoggingEnabled()) {
                     log.info(
-                        "sending webhook request: {},{}",
+                        "sending webhook request: {},{},{}",
                         kv("httpMethod", request.method()),
-                        kv("url", request.url()));
+                        kv("url", request.url()),
+                        kv("headerByteCount", request.headers().byteCount()));
                   }
 
                   Response response = chain.proceed(request);
@@ -128,10 +129,11 @@ public class WebhookConfiguration {
 
                   if (webhookProperties.isAuditLoggingEnabled()) {
                     log.info(
-                        "received webhook response: {},{},{},{}",
+                        "received webhook response: {},{},{},{},{}",
                         kv("httpMethod", response.request().method()),
                         kv("url", response.request().url()),
                         kv("responseCode", response.code()),
+                        kv("headerByteCount", response.headers().byteCount()),
                         kv(
                             "latencyMs",
                             response.receivedResponseAtMillis() - response.sentRequestAtMillis()));
