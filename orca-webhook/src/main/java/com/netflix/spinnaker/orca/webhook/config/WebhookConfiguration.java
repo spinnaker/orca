@@ -77,7 +77,7 @@ import org.springframework.web.client.RestTemplate;
 public class WebhookConfiguration {
   private final WebhookProperties webhookProperties;
 
-  private final Logger log = LoggerFactory.getLogger(getClass());
+  private final Logger log = LoggerFactory.getLogger(WebhookConfiguration.class);
 
   @Autowired
   public WebhookConfiguration(WebhookProperties webhookProperties) {
