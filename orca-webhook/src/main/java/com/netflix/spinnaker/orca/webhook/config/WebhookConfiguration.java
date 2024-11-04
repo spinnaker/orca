@@ -113,6 +113,8 @@ public class WebhookConfiguration {
                 chain -> {
                   Request request = chain.request();
 
+                  validateRequestSize(request, webhookProperties.getMaxRequestBytes());
+
                   if (webhookProperties.isAuditLoggingEnabled()) {
                     log.info(
                         "sending webhook request: {},{}",
@@ -120,9 +122,9 @@ public class WebhookConfiguration {
                         kv("url", request.url()));
                   }
 
-                  validateRequestSize(request, webhookProperties.getMaxRequestBytes());
-
                   Response response = chain.proceed(request);
+
+                  validateResponseSize(response, webhookProperties.getMaxResponseBytes());
 
                   if (webhookProperties.isAuditLoggingEnabled()) {
                     log.info(
@@ -134,8 +136,6 @@ public class WebhookConfiguration {
                             "latencyMs",
                             response.receivedResponseAtMillis() - response.sentRequestAtMillis()));
                   }
-
-                  validateResponseSize(response, webhookProperties.getMaxResponseBytes());
 
                   if (response.isRedirect()) {
                     String redirectLocation = response.header("Location");
