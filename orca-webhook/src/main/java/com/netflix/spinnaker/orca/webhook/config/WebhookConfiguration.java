@@ -47,6 +47,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.BufferedSource;
+import okio.Okio;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,11 +131,12 @@ public class WebhookConfiguration {
 
                   if (webhookProperties.isAuditLoggingEnabled()) {
                     log.info(
-                        "received webhook response: {},{},{},{},{}",
+                        "received webhook response: {},{},{},{},{},{}",
                         kv("httpMethod", response.request().method()),
                         kv("url", response.request().url()),
                         kv("responseCode", response.code()),
                         kv("headerByteCount", response.headers().byteCount()),
+                        kv("contentLength", getResponseBodyContentLength(response)),
                         kv(
                             "latencyMs",
                             response.receivedResponseAtMillis() - response.sentRequestAtMillis()));
@@ -241,6 +243,31 @@ public class WebhookConfiguration {
       log.info(message);
       throw new IllegalArgumentException(message);
     }
+  }
+
+  /** Return the content length of a response body */
+  private long getResponseBodyContentLength(Response response) throws IOException {
+    ResponseBody responseBody = response.body();
+    if (responseBody == null) {
+      return 0;
+    }
+
+    long contentLength = responseBody.contentLength();
+    if (contentLength != -1) {
+      return contentLength;
+    }
+
+    // Nothing has read the body yet.  This is the likely case.  Peek into the body to get the
+    // length.  See okhttp.Response.peekBody for inspiration.
+    //
+    // contentLength = responseBody.bytes().length
+    //
+    // consumes the response such that future processing fails since the underlying buffer is
+    // closed.
+    //
+    // Note also that responseBody.source().getBuffer().size() doesn't work reliably.
+    BufferedSource peeked = responseBody.source().peek();
+    return peeked.readAll(Okio.blackhole());
   }
 
   /** Return if the response size is valid. Throw an exception otherwise. */
