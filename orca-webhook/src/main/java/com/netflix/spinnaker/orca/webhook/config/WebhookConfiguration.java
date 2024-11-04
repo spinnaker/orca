@@ -179,6 +179,21 @@ public class WebhookConfiguration {
     return requestFactory;
   }
 
+  /** Return the content length of a request body, or -1 for unknown. */
+  private long getRequestBodyContentLength(Request request) throws IOException {
+    RequestBody requestBody = request.body();
+    if (requestBody == null) {
+      return 0;
+    }
+
+    try {
+      return requestBody.contentLength();
+    } catch (IOException e) {
+      log.error("exception retrieving content length of request to {}", request.url(), e);
+      throw e;
+    }
+  }
+
   /** Return if the request size is valid. Throw an exception otherwise. */
   private void validateRequestSize(Request request, long maxRequestBytes) throws IOException {
     if (maxRequestBytes <= 0L) {
@@ -202,24 +217,18 @@ public class WebhookConfiguration {
       return;
     }
 
-    long contentLength = 0L;
-    try {
-      contentLength = requestBody.contentLength();
-      if (contentLength == -1) {
-        // Given that OkHttp3ClientHttpRequestFactory.buildRequest (called by
-        // OkHttp3ClientRequest.executeInternal) has a byte array argument, this
-        // doesn't seem possible.  Reject the request in case it ends up being
-        // too big.  Yes, this is paranoid, but seems safer.
-        String message =
-            String.format(
-                "unable to verify size of body in request to %s, content length not set",
-                request.url());
-        log.error(message);
-        throw new IllegalStateException(message);
-      }
-    } catch (IOException e) {
-      log.error("exception retrieving content length of request to {}", request.url(), e);
-      throw e;
+    long contentLength = getRequestBodyContentLength(request);
+    if (contentLength == -1) {
+      // Given that OkHttp3ClientHttpRequestFactory.buildRequest (called by
+      // OkHttp3ClientRequest.executeInternal) has a byte array argument, this
+      // doesn't seem possible.  Reject the request in case it ends up being
+      // too big.  Yes, this is paranoid, but seems safer.
+      String message =
+          String.format(
+              "unable to verify size of body in request to %s, content length not set",
+              request.url());
+      log.error(message);
+      throw new IllegalStateException(message);
     }
 
     long totalSize = headerSize + contentLength;
