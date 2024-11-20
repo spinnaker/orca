@@ -1275,14 +1275,10 @@ import kotlin.collections.toTypedArray
   private fun selectExecution(
     ctx: DSLContext,
     type: ExecutionType,
-    id: String,
-    forUpdate: Boolean = false
+    id: String
   ): PipelineExecution? {
     withPool(poolName) {
       val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
-      if (forUpdate) {
-        select.forUpdate()
-      }
       return select.fetchExecution()
     }
   }
