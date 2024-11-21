@@ -333,6 +333,9 @@ class RunTaskHandler(
       )
     )
 
+    val stageOverrideBackoffPeriod = stage.getBackoffPeriod()
+    stageOverrideBackoffPeriod.ifPresent { backOffs.add(it) }
+
     if (this is CloudProviderAware && hasCloudProvider(stage)) {
       backOffs.add(
         dynamicConfigService.getConfig(

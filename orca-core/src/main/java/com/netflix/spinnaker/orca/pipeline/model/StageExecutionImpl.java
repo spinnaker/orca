@@ -768,6 +768,20 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     return Optional.empty();
   }
 
+  @Nonnull
+  @JsonIgnore
+  public Optional<Long> getBackoffPeriod() {
+    Object backoffPeriod = getContext().get(STAGE_BACKOFF_PERIOD_OVERRIDE_KEY);
+    if (backoffPeriod instanceof Integer) {
+      return Optional.of((Integer) backoffPeriod).map(Integer::longValue);
+    } else if (backoffPeriod instanceof Long) {
+      return Optional.of((Long) backoffPeriod);
+    } else if (backoffPeriod instanceof Double) {
+      return Optional.of((Double) backoffPeriod).map(Double::longValue);
+    }
+    return Optional.empty();
+  }
+
   /**
    * Check if this stage should propagate FAILED_CONTINUE to parent stage. Normally, if a synthetic
    * child fails with FAILED_CONTINUE {@link
@@ -861,5 +875,6 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     return (status == ExecutionStatus.TERMINAL);
   }
 
+  public static final String STAGE_BACKOFF_PERIOD_OVERRIDE_KEY = "backoffPeriodMs";
   public static final String STAGE_TIMEOUT_OVERRIDE_KEY = "stageTimeoutMs";
 }
