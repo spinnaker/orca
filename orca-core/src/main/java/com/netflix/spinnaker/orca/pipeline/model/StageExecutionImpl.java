@@ -758,12 +758,8 @@ public class StageExecutionImpl implements StageExecution, Serializable {
   @JsonIgnore
   private Optional<Long> getLongFromContext(String key) {
     Object value = getContext().get(key);
-    if (value instanceof Integer) {
-      return Optional.of((Integer) value).map(Integer::longValue);
-    } else if (value instanceof Long) {
-      return Optional.of((Long) value);
-    } else if (value instanceof Double) {
-      return Optional.of((Double) value).map(Double::longValue);
+    if (value instanceof Number) {
+      return Optional.of(((Number) value).longValue());
     }
     return Optional.empty();
   }
