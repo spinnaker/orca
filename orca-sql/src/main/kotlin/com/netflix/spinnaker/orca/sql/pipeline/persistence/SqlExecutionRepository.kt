@@ -512,7 +512,6 @@ class SqlExecutionRepository(
 
     val finalResult: MutableList<String> = mutableListOf()
 
-    log.info("getting execution ids")
     withPool(poolName) {
       val baseQuery = jooq.select(field("config_id"), field("id"))
         .from(table)
