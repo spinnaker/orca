@@ -82,6 +82,27 @@ class EvaluateVariablesStageSpec extends Specification {
     stage.context.notifications[0].address == "someone@somewhere.com"
   }
 
+  void "Should eval successful when referencing pipeline metadata"() {
+    setup:
+    def summary = new ExpressionEvaluationSummary()
+
+    def stage = stage {
+      refId = "1"
+      type = "evaluateVariables"
+      context["notifications"] = [
+          [address: '${execution.metadata.myaddress}']
+      ]
+      execution["metadata"] = [myaddress: "someone@somewhere.com"]
+    }
+
+    when:
+    def shouldContinue = evaluateVariablesStage.processExpressions(stage, contextParameterProcessor, summary)
+
+    then:
+    shouldContinue == false
+    stage.context.notifications[0].address == "someone@somewhere.com"
+  }
+
   void "Should correctly clean variables in restart scenario"() {
     setup:
     def summary = new ExpressionEvaluationSummary()
