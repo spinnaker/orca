@@ -78,9 +78,11 @@ import org.jooq.impl.DSL.table
 import org.jooq.impl.DSL.timestampSub
 import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource
 import rx.Observable
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import javax.sql.DataSource
 
 /**
  * A generic SQL [ExecutionRepository].
@@ -96,10 +98,12 @@ class SqlExecutionRepository(
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
   private val poolName: String = "default",
+  internal var readPoolName: String = "read", /* internal for testing */
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
   private val compressionProperties: ExecutionCompressionProperties,
-  private val pipelineRefEnabled: Boolean
+  private val pipelineRefEnabled: Boolean,
+  private val dataSource: DataSource
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -109,7 +113,13 @@ class SqlExecutionRepository(
   private val log = LoggerFactory.getLogger(javaClass)
 
   init {
-    log.info("Creating SqlExecutionRepository with partition=$partitionName and pool=$poolName")
+    // If there's no read pool configured, fall back to the default pool
+    if ((dataSource !is AbstractRoutingDataSource)
+      || (dataSource.resolvedDataSources[readPoolName] == null)) {
+      readPoolName = poolName
+    }
+
+    log.info("Creating SqlExecutionRepository with partition=$partitionName, pool=$poolName, readPool=$readPoolName")
 
     try {
       withPool(poolName) {
@@ -158,10 +168,8 @@ class SqlExecutionRepository(
     validateHandledPartitionOrThrow(execution)
 
     withPool(poolName) {
-      jooq.transactional {
-        it.delete(execution.type.stagesTableName)
-          .where(stageId.toWhereCondition()).execute()
-      }
+      jooq.delete(execution.type.stagesTableName)
+        .where(stageId.toWhereCondition()).execute()
     }
   }
 
@@ -253,7 +261,7 @@ class SqlExecutionRepository(
   }
 
   override fun isCanceled(type: ExecutionType, id: String): Boolean {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return jooq.fetchExists(
         jooq.selectFrom(type.tableName)
           .where(id.toWhereCondition())
@@ -388,7 +396,7 @@ class SqlExecutionRepository(
   }
 
   private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<PipelineExecution> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val select = jooq.selectExecutions(
         type,
         fields = selectExecutionFields(compressionProperties) + field("status"),
@@ -417,7 +425,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecution> =
-    withPool(poolName) {
+    withPool(readPoolName) {
       Observable.from(
         fetchExecutions { pageSize, cursor ->
           selectExecutions(PIPELINE, pageSize, cursor) {
@@ -434,7 +442,7 @@ class SqlExecutionRepository(
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
     // of executions triggered costly full table scans.
-    withPool(poolName) {
+    withPool(readPoolName) {
       val select = if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
         jooq.selectExecutions(
           PIPELINE,
@@ -478,7 +486,7 @@ class SqlExecutionRepository(
     criteria: ExecutionCriteria,
     sorter: ExecutionComparator?
   ): MutableList<PipelineExecution> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return jooq.selectExecutions(
         ORCHESTRATION,
         conditions = {
@@ -516,7 +524,7 @@ class SqlExecutionRepository(
     }
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val execution = jooq.selectExecution(ORCHESTRATION, compressionProperties)
         .where(
           field("id").eq(
@@ -530,21 +538,27 @@ class SqlExecutionRepository(
         )
         .fetchExecution()
 
-      if (execution != null) {
-        if (!execution.status.isComplete) {
-          return execution
-        }
-        jooq.transactional {
-          it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-        }
+      if (execution == null) {
+        throw ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
       }
 
-      throw ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
+      if (!execution.status.isComplete) {
+        return execution
+      }
     }
+
+    // If we get here, there's an execution with the given correlation id, but
+    // it's complete, so clean up the correlation_ids table.
+    withPool(poolName) {
+      jooq.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
+    }
+
+    // Treat a completed execution similar to not finding one at all.
+    throw ExecutionNotFoundException("Complete Orchestration found for correlation ID $correlationId")
   }
 
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val execution = jooq.selectExecution(PIPELINE, compressionProperties)
         .where(
           field("id").eq(
@@ -558,17 +572,22 @@ class SqlExecutionRepository(
         )
         .fetchExecution()
 
-      if (execution != null) {
-        if (!execution.status.isComplete) {
-          return execution
-        }
-        jooq.transactional {
-          it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-        }
+      if (execution == null) {
+        throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
       }
 
-      throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
+      if (!execution.status.isComplete) {
+        return execution
+      }
     }
+
+    // If we get here, there's an execution with the given correlation id, but
+    // it's complete, so clean up the correlation_ids table.
+    withPool(poolName) {
+      jooq.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
+    }
+
+    throw ExecutionNotFoundException("Complete Pipeline found for correlation ID $correlationId")
   }
 
   override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> =
@@ -583,7 +602,7 @@ class SqlExecutionRepository(
       }
 
   override fun retrieveAllApplicationNames(type: ExecutionType?): List<String> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return if (type == null) {
         jooq.select(field("application"))
           .from(PIPELINE.tableName)
@@ -606,7 +625,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return if (type == null) {
         jooq.select(field("application"))
           .from(PIPELINE.tableName)
@@ -632,7 +651,7 @@ class SqlExecutionRepository(
   }
 
   override fun countActiveExecutions(): ActiveExecutionsReport {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val partitionPredicate = if (partitionName != null) field(name("partition")).eq(partitionName) else value(1).eq(value(1))
 
       val orchestrationsQuery = jooq.selectCount()
@@ -661,7 +680,7 @@ class SqlExecutionRepository(
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
   ): List<PipelineExecution> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val select = jooq.select(selectExecutionFields(compressionProperties))
         .from(PIPELINE.tableName)
         .join(
@@ -741,7 +760,7 @@ class SqlExecutionRepository(
   }
 
   override fun hasExecution(type: ExecutionType, id: String): Boolean {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return jooq.selectCount()
         .from(type.tableName)
         .where(id.toWhereCondition())
@@ -750,7 +769,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveAllExecutionIds(type: ExecutionType): MutableList<String> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       return jooq.select(field("id")).from(type.tableName).fetch("id", String::class.java)
     }
   }
@@ -770,7 +789,7 @@ class SqlExecutionRepository(
   ): Pair<String, String?> {
     if (isULID(id)) return Pair(id, null)
 
-    withPool(poolName) {
+    withPool(readPoolName) {
       val ts = (timestamp ?: System.currentTimeMillis())
       val row = ctx.select(field("id"))
         .from(table)
@@ -1109,14 +1128,10 @@ class SqlExecutionRepository(
   private fun selectExecution(
     ctx: DSLContext,
     type: ExecutionType,
-    id: String,
-    forUpdate: Boolean = false
+    id: String
   ): PipelineExecution? {
     withPool(poolName) {
       val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
-      if (forUpdate) {
-        select.forUpdate()
-      }
       return select.fetchExecution()
     }
   }
@@ -1127,7 +1142,7 @@ class SqlExecutionRepository(
     cursor: String?,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
   ): Collection<PipelineExecution> {
-    withPool(poolName) {
+    withPool(readPoolName) {
       val select = jooq.selectExecutions(
         type,
         conditions = {
