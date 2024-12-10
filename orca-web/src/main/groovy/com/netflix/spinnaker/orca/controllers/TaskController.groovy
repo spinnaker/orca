@@ -607,9 +607,9 @@ class TaskController {
 
     // get all relevant pipeline and strategy configs from front50
     def pipelineConfigIds = front50Service.getPipelines(application, false)*.id as List<String>
-    log.info("received ${pipelineConfigIds.size()} pipelines for application: $application from front50")
+    log.debug("received ${pipelineConfigIds.size()} pipelines for application: $application from front50")
     def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
-    log.info("received ${strategyConfigIds.size()} strategies for application: $application from front50")
+    log.debug("received ${strategyConfigIds.size()} strategies for application: $application from front50")
 
     def allFront50PipelineConfigIds = pipelineConfigIds + strategyConfigIds
 
@@ -628,11 +628,11 @@ class TaskController {
 
     allPipelineExecutions.sort(startTimeOrId)
     if (!expand) {
-      log.info("unexpanding pipeline executions")
+      log.debug("unexpanding pipeline executions")
       unexpandPipelineExecutions(allPipelineExecutions)
     }
 
-    log.info("filtering pipelines by history")
+    log.debug("filtering pipelines by history")
     return filterPipelinesByHistoryCutoff(allPipelineExecutions, limit)
   }
 

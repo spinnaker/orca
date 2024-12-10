@@ -512,7 +512,6 @@ class SqlExecutionRepository(
 
     val finalResult: MutableList<String> = mutableListOf()
 
-    log.info("getting execution ids")
     withPool(poolName) {
       val baseQuery = jooq.select(field("config_id"), field("id"))
         .from(table)
@@ -570,7 +569,7 @@ class SqlExecutionRepository(
         .queryTimeout(queryTimeoutSeconds) // add an explicit timeout so that the query doesn't run forever
         .fetch()
 
-      log.info("getting stage information for all the executions found so far")
+      log.debug("getting stage information for all the executions found so far")
       return ExecutionMapper(mapper, stageReadSize,compressionProperties, pipelineRefEnabled).map(baseQuery.intoResultSet(), jooq)
     }
   }
