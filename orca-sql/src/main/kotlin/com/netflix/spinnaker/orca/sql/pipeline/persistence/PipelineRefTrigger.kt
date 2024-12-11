@@ -100,5 +100,7 @@ data class PipelineRefTrigger(
       isStrategy = isStrategy,
       parentExecution = parentExecution,
       parentPipelineStageId = parentPipelineStageId
-    )
+    ).apply {
+      this.resolvedExpectedArtifacts = this@PipelineRefTrigger.resolvedExpectedArtifacts
+    }
 }

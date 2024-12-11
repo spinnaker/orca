@@ -61,7 +61,9 @@ class PipelineRefTriggerDeserializerSupplier(
               isStrategy = get("strategy")?.booleanValue() == true,
               parentExecutionId = parentExecutionId,
               parentPipelineStageId = get("parentPipelineStageId")?.textValue()
-            )
+            ).apply {
+              resolvedExpectedArtifacts = get("resolvedExpectedArtifacts")?.listValue(parser) ?: mutableListOf()
+            }
           }
     }
 
