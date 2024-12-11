@@ -102,5 +102,6 @@ data class PipelineRefTrigger(
       parentPipelineStageId = parentPipelineStageId
     ).apply {
       this.resolvedExpectedArtifacts = this@PipelineRefTrigger.resolvedExpectedArtifacts
+      this.other = this@PipelineRefTrigger.other
     }
 }
