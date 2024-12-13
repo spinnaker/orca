@@ -74,6 +74,16 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
     return type;
   }
 
+  private Map<String, Object> metadata;
+
+  public Map<String, Object> getMetadata() {
+    return this.metadata;
+  }
+
+  public void setMetadata(Map<String, Object> metadata) {
+    this.metadata = metadata;
+  }
+
   private String id;
 
   public @Nonnull String getId() {
