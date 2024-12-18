@@ -39,19 +39,19 @@ public class TaskControllerConfigurationProperties {
    * process the queries to retrieve the executions. Needs to be tuned appropriately since this has
    * the potential to exhaust the connection pool size for the database.
    */
-  int maxExecutionRetrievalThreads = 10;
+  int maxExecutionRetrievalThreads = 4;
 
   /**
    * only applicable if optimizeExecutionRetrieval = true. It specifies how many pipeline executions
-   * should be processed at a time. 150 pipeline executions was selected as the default after
-   * testing this number against an orca sql db that contained lots of pipelines and executions for
-   * a single application (about 1200 pipelines and 1500 executions). Each execution was 1 MB or
-   * more in size.
+   * should be processed at a time. 150 worked with an orca sql db that contained lots of pipelines
+   * and executions for a single application (about 1200 pipelines and 1500 executions with each
+   * execution of size >= 1 MB). 50 is kept as default, keeping in view that majority of the cases
+   * have lesser number of executions.
    *
    * <p>It can be further tuned, depending on your setup, since 150 executions work well for some
    * applications but a higher number may be appropriate for others.
    */
-  int maxNumberOfPipelineExecutionsToProcess = 150;
+  int maxNumberOfPipelineExecutionsToProcess = 50;
 
   /**
    * only applicable if optimizeExecutionRetrieval = true. It specifies the max time after which the
