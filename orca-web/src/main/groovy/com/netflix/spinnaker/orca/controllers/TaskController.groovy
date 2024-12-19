@@ -96,6 +96,9 @@ class TaskController {
   @Value('${tasks.number-of-old-pipeline-executions-to-include:2}')
   int numberOfOldPipelineExecutionsToInclude
 
+  @Value('${tasks.exclude-execution-of-disabled-pipelines:false}')
+  Boolean excludeExecutionsOfDisabledPipelines
+
   Clock clock = Clock.systemUTC()
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
@@ -602,7 +605,7 @@ class TaskController {
       statuses: (statuses.split(",") as Collection)
     )
 
-    def pipelineConfigIds = front50Service.getPipelines(application, false)*.id as List<String>
+    def pipelineConfigIds = front50Service.getPipelines(application, false, excludeExecutionsOfDisabledPipelines)*.id as List<String>
     def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
     def allIds = pipelineConfigIds + strategyConfigIds
 
