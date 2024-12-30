@@ -80,7 +80,7 @@ class ExecutionMapper(
         mapper.readValue<PipelineExecution>(body)
           .also {
             execution ->
-            convertPipelineRefTrigger(execution, context)
+//            convertPipelineRefTrigger(execution, context)
             execution.setSize(body.length.toLong())
             results.add(execution)
             execution.partition = rs.getString("partition")
