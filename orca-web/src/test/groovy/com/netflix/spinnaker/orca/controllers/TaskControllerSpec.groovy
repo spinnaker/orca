@@ -248,7 +248,7 @@ class TaskControllerSpec extends Specification {
         pipelineConfigId = config.pipelineConfigId
       }
     })
-    front50Service.getPipelines(app, false, "all") >> [[id: "1"], [id: "2"]]
+    front50Service.getPipelines(app, false, null) >> [[id: "1"], [id: "2"]]
     front50Service.getStrategies(app) >> []
 
     executionRepository.retrievePipelineConfigIdsForApplication(app) >> { return List.of( '2')}

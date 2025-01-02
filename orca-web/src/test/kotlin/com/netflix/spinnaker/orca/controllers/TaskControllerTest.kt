@@ -157,7 +157,7 @@ class TaskControllerTest : JUnit5Minutests {
           )
         )
         .execute()
-      Mockito.`when`(front50Service.getPipelines("test-app", false,"all"))
+      Mockito.`when`(front50Service.getPipelines("test-app", false,null))
         .thenReturn(
           listOf(
             mapOf("id" to "1"),
