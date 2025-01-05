@@ -159,6 +159,10 @@ class DualExecutionRepository(
     return select(type, id).retrieve(type, id)
   }
 
+  override fun retrieve(type: ExecutionType, id: String, includeNestedExecutions: Boolean): PipelineExecution {
+    return retrieve(type, id)
+  }
+
   override fun delete(type: ExecutionType, id: String) {
     return select(type, id).delete(type, id)
   }

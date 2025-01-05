@@ -72,6 +72,12 @@ public interface ExecutionRepository {
   PipelineExecution retrieve(@Nonnull ExecutionType type, @Nonnull String id)
       throws ExecutionNotFoundException;
 
+  @Nonnull
+  @Metered(metricName = "retrieveById")
+  PipelineExecution retrieve(
+      @Nonnull ExecutionType type, @Nonnull String id, @Nonnull Boolean includeNestedExecutions)
+      throws ExecutionNotFoundException;
+
   void delete(@Nonnull ExecutionType type, @Nonnull String id);
 
   void delete(@Nonnull ExecutionType type, @Nonnull List<String> idsToDelete);

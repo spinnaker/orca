@@ -98,8 +98,7 @@ class SqlExecutionRepository(
   private val poolName: String = "default",
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
-  private val compressionProperties: ExecutionCompressionProperties,
-  private val pipelineRefEnabled: Boolean
+  private val compressionProperties: ExecutionCompressionProperties
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -376,6 +375,10 @@ class SqlExecutionRepository(
     selectExecution(jooq, type, id)
       ?: throw ExecutionNotFoundException("No $type found for $id")
 
+  override fun retrieve(type: ExecutionType, id: String, includeNestedExecutions: Boolean) =
+    selectExecution(jooq, type, id, includeNestedExecutions = includeNestedExecutions)
+      ?: throw ExecutionNotFoundException("No $type found for $id")
+
   override fun retrieve(type: ExecutionType): Observable<PipelineExecution> =
     Observable.from(
       fetchExecutions { pageSize, cursor ->
@@ -384,10 +387,10 @@ class SqlExecutionRepository(
     )
 
   override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
-    return retrieve(type, criteria, null)
+    return retrieve(type, criteria, null, includeNestedExecutions = false)
   }
 
-  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<PipelineExecution> {
+  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?, includeNestedExecutions: Boolean): Observable<PipelineExecution> {
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
@@ -412,7 +415,7 @@ class SqlExecutionRepository(
         }
       )
 
-      return Observable.from(select.fetchExecutions())
+      return Observable.from(select.fetchExecutions(includeNestedExecutions))
     }
   }
 
@@ -462,7 +465,7 @@ class SqlExecutionRepository(
         )
       }
 
-      return Observable.from(select.fetchExecutions())
+      return Observable.from(select.fetchExecutions(false))
     }
   }
 
@@ -505,7 +508,7 @@ class SqlExecutionRepository(
 
           ordered.offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
         }
-      ).fetchExecutions().toMutableList()
+      ).fetchExecutions(false).toMutableList()
     }
   }
 
@@ -528,7 +531,7 @@ class SqlExecutionRepository(
             ) as Any
           )
         )
-        .fetchExecution()
+        .fetchExecution(false)
 
       if (execution != null) {
         if (!execution.status.isComplete) {
@@ -556,7 +559,7 @@ class SqlExecutionRepository(
             ) as Any
           )
         )
-        .fetchExecution()
+        .fetchExecution(false)
 
       if (execution != null) {
         if (!execution.status.isComplete) {
@@ -577,8 +580,8 @@ class SqlExecutionRepository(
       .setStatuses(BUFFERED)
       .let { criteria ->
         rx.Observable.merge(
-          retrieve(ORCHESTRATION, criteria, partitionName),
-          retrieve(PIPELINE, criteria, partitionName)
+          retrieve(ORCHESTRATION, criteria, partitionName, false),
+          retrieve(PIPELINE, criteria, partitionName, false)
         ).toList().toBlocking().single()
       }
 
@@ -709,7 +712,7 @@ class SqlExecutionRepository(
             else -> field("id").asc()
           }
         )
-      return select.fetchExecutions().toList()
+      return select.fetchExecutions(false).toList()
     }
   }
 
@@ -1110,14 +1113,15 @@ class SqlExecutionRepository(
     ctx: DSLContext,
     type: ExecutionType,
     id: String,
-    forUpdate: Boolean = false
+    forUpdate: Boolean = false,
+    includeNestedExecutions: Boolean = false
   ): PipelineExecution? {
     withPool(poolName) {
       val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
       if (forUpdate) {
         select.forUpdate()
       }
-      return select.fetchExecution()
+      return select.fetchExecution(includeNestedExecutions)
     }
   }
 
@@ -1151,7 +1155,7 @@ class SqlExecutionRepository(
         }
       )
 
-      return select.fetchExecutions()
+      return select.fetchExecutions(false)
     }
   }
 
@@ -1204,11 +1208,11 @@ class SqlExecutionRepository(
       .let { seek(it) }
   }
 
-  private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq)
+  private fun SelectForUpdateStep<out Record>.fetchExecutions(fetchNestedExecution: Boolean) =
+    ExecutionMapper(mapper, stageReadSize, compressionProperties).map(fetch().intoResultSet(), jooq, fetchNestedExecution)
 
-  private fun SelectForUpdateStep<out Record>.fetchExecution() =
-    fetchExecutions().firstOrNull()
+  private fun SelectForUpdateStep<out Record>.fetchExecution(includeNestedExecutions: Boolean) =
+    fetchExecutions(includeNestedExecutions).firstOrNull()
 
   private fun fetchExecutions(nextPage: (Int, String?) -> Iterable<PipelineExecution>) =
     object : Iterable<PipelineExecution> {

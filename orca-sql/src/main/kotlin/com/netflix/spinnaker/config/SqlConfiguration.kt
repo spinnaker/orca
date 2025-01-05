@@ -89,8 +89,7 @@ class SqlConfiguration {
       orcaSqlProperties.stageReadSize,
       interlink = interlink.orElse(null),
       executionRepositoryListeners = executionRepositoryListeners,
-      compressionProperties = compressionProperties,
-      pipelineRefEnabled = pipelineRefProperties.enabled
+      compressionProperties = compressionProperties
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
@@ -115,8 +114,7 @@ class SqlConfiguration {
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
       poolName,
-      compressionProperties = compressionProperties,
-      pipelineRefEnabled = pipelineRefProperties.enabled
+      compressionProperties = compressionProperties
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }

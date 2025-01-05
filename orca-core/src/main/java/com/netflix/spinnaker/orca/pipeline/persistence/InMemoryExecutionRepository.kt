@@ -155,6 +155,10 @@ class InMemoryExecutionRepository : ExecutionRepository {
     return storageFor(type)[id] ?: throw ExecutionNotFoundException("No $type found for $id")
   }
 
+  override fun retrieve(type: ExecutionType, id: String, includeNestedExecutions: Boolean): PipelineExecution {
+    return retrieve(type, id)
+  }
+
   override fun retrieve(type: ExecutionType): Observable<PipelineExecution> {
     return Observable.from(storageFor(type).values)
   }

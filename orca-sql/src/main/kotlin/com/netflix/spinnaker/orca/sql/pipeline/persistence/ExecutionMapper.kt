@@ -38,8 +38,7 @@ import java.nio.charset.StandardCharsets
 class ExecutionMapper(
   private val mapper: ObjectMapper,
   private val stageBatchSize: Int,
-  private val compressionProperties: ExecutionCompressionProperties,
-  private val pipelineRefEnabled: Boolean
+  private val compressionProperties: ExecutionCompressionProperties
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -69,7 +68,7 @@ class ExecutionMapper(
     }
   }
 
-  fun map(rs: ResultSet, context: DSLContext): Collection<PipelineExecution> {
+  fun map(rs: ResultSet, context: DSLContext, includeNestedExecutions: Boolean): Collection<PipelineExecution> {
     val results = mutableListOf<PipelineExecution>()
     val executionMap = mutableMapOf<String, PipelineExecution>()
     val legacyMap = mutableMapOf<String, String>()
@@ -80,7 +79,9 @@ class ExecutionMapper(
         mapper.readValue<PipelineExecution>(body)
           .also {
             execution ->
-//            convertPipelineRefTrigger(execution, context)
+            if (includeNestedExecutions) {
+              convertPipelineRefTrigger(execution, context)
+            }
             execution.setSize(body.length.toLong())
             results.add(execution)
             execution.partition = rs.getString("partition")
@@ -161,7 +162,7 @@ class ExecutionMapper(
     return context
       .selectExecution(type, compressionProperties)
       .where(field("id").eq(trigger.parentExecutionId))
-      .fetchExecutions(mapper, 200, compressionProperties, context, pipelineRefEnabled)
+      .fetchExecutions(mapper, 200, compressionProperties, context)
       .firstOrNull()
   }
 }
