@@ -16,9 +16,11 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
+import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.model.Instance.InstanceInfo
+import org.slf4j.Logger
 import retrofit.converter.JacksonConverter
 
 import java.util.concurrent.TimeUnit
@@ -33,7 +35,7 @@ import com.netflix.spinnaker.orca.libdiffs.Library
 import com.netflix.spinnaker.orca.libdiffs.LibraryDiffTool
 import com.netflix.spinnaker.orca.libdiffs.LibraryDiffs
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
-import com.squareup.okhttp.OkHttpClient
+import okhttp3.OkHttpClient
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -41,7 +43,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Import
 import org.springframework.stereotype.Component
 import retrofit.RestAdapter
-import retrofit.client.OkClient
 
 @Slf4j
 @Component
@@ -65,6 +66,10 @@ class JarDiffsTask implements DiffTask {
   OortHelper oortHelper
 
   int platformPort = 8077
+
+  private Logger getLog() {
+    return log
+  }
 
   @Override
   public TaskResult execute(StageExecution stage) {
@@ -113,17 +118,18 @@ class JarDiffsTask implements DiffTask {
   }
 
   InstanceService createInstanceService(String address) {
-    def okHttpClient = new OkHttpClient(retryOnConnectionFailure: false)
-
+    def okHttpClient = new OkHttpClient.Builder()
     // short circuit as quickly as possible security groups don't allow ingress to <instance>:8077
     // (spinnaker applications don't allow this)
-    okHttpClient.setConnectTimeout(2, TimeUnit.SECONDS)
-    okHttpClient.setReadTimeout(2, TimeUnit.SECONDS)
+    .connectTimeout(2, TimeUnit.SECONDS)
+    .readTimeout(2, TimeUnit.SECONDS)
+    .retryOnConnectionFailure(false)
+    .build()
 
     RestAdapter restAdapter = new RestAdapter.Builder()
       .setEndpoint(address)
       .setConverter(new JacksonConverter())
-      .setClient(new OkClient(okHttpClient))
+      .setClient(new Ok3Client(okHttpClient))
       .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
       .build()
 
@@ -137,19 +143,19 @@ class JarDiffsTask implements DiffTask {
     int numberOfInstancesChecked = 0;
     instances.find { key, instanceInfo ->
       if (numberOfInstancesChecked++ >= 5) {
-        log.info("Unable to check jar list after 5 attempts, giving up!")
+        getLog().info("Unable to check jar list after 5 attempts, giving up!")
         return true
       }
 
       String hostName = instanceInfo.privateIpAddress ?: instanceInfo.hostName
-      log.debug("attempting to get a jar list from : ${key} (${hostName}:${platformPort})")
+      getLog().debug("attempting to get a jar list from : ${key} (${hostName}:${platformPort})")
       def instanceService = createInstanceService("http://${hostName}:${platformPort}")
       try {
         def instanceResponse = instanceService.getJars()
         jarMap = objectMapper.readValue(instanceResponse.body.in().text, Map)
         return true
       } catch(Exception e) {
-        log.debug("could not get a jar list from : ${key} (${hostName}:${platformPort}) - ${e.message}")
+        getLog().debug("could not get a jar list from : ${key} (${hostName}:${platformPort}) - ${e.message}")
         // swallow it so we can try the next instance
         return false
       }
