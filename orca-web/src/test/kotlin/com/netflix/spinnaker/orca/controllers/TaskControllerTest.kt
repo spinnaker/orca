@@ -33,8 +33,6 @@ import dev.minutest.rootContext
 import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.table
-import org.junit.Assert.assertThrows
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -61,7 +59,6 @@ class TaskControllerTest : JUnit5Minutests {
       mapper = OrcaObjectMapper.getInstance(),
       retryProperties = RetryProperties(),
       compressionProperties = ExecutionCompressionProperties(),
-      pipelineRefEnabled = false,
       dataSource = mock()
     )
 

@@ -598,7 +598,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
           null,
           emptyList(),
           executionCompressionPropertiesEnabled,
-          false,
           mockedAbstractRoutingDataSource
         )
 
@@ -624,7 +623,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
           null,
           emptyList(),
           executionCompressionPropertiesEnabled,
-          false,
           mockedAbstractRoutingDataSource
         )
 
@@ -670,9 +668,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesEnabled,
-        false,
         mockDataSource
-        executionCompressionPropertiesEnabled
       )
 
     val executionCompressionPropertiesDisabled = ExecutionCompressionProperties().apply {
@@ -692,7 +688,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesDisabled,
-        false,
         mockDataSource
       )
 
@@ -716,7 +711,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesReadOnly,
-        false,
         mockDataSource
       )
 
@@ -733,7 +727,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesDisabled,
-        true,
         mockDataSource
       )
 
@@ -750,7 +743,6 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesEnabled,
-        true,
         mockDataSource
       )
 

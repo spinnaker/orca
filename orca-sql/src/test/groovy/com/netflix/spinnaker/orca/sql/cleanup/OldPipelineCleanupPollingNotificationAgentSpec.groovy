@@ -81,7 +81,7 @@ abstract class OldPipelineCleanupPollingNotificationAgentSpec extends Specificat
 
   def setupSpec() {
     currentDatabase = getDatabase()
-    executionRepository = new SqlExecutionRepository("test",
+    executionRepository = new com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository("test",
         currentDatabase.context,
         mapper,
         new RetryProperties(),
