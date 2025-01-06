@@ -672,6 +672,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         executionCompressionPropertiesEnabled,
         false,
         mockDataSource
+        executionCompressionPropertiesEnabled
       )
 
     val executionCompressionPropertiesDisabled = ExecutionCompressionProperties().apply {

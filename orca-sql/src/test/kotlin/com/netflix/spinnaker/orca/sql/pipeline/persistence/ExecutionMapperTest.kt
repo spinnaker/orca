@@ -52,7 +52,7 @@ class ExecutionMapperTest : JUnit5Minutests {
     context("handle body decompression") {
       val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, ExecutionCompressionProperties().apply {
         enabled = true
-      }, false)
+      })
 
       val mockedResultSet = mock<ResultSet>()
 
@@ -86,7 +86,7 @@ class ExecutionMapperTest : JUnit5Minutests {
 
       test("conversion ignored when trigger is not PipelineRef") {
         val mockedExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(DefaultTrigger(type = "default")).`when`(mockedExecution).trigger
@@ -97,7 +97,7 @@ class ExecutionMapperTest : JUnit5Minutests {
 
       test("conversion is aborted when trigger is PipelineRef but parentExecution not found") {
         val mockedExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(PipelineRefTrigger(parentExecutionId = "test-parent-id")).`when`(mockedExecution).trigger
@@ -129,7 +129,7 @@ class ExecutionMapperTest : JUnit5Minutests {
         }
 
         val mockedParentExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(mockedParentExecution).`when`(spyMapper).fetchParentExecution(any(), any(), any())
