@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.TaskImplementationResolver
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
@@ -30,6 +31,7 @@ import com.netflix.spinnaker.orca.ext.anyUpstreamStagesFailed
 import com.netflix.spinnaker.orca.ext.firstAfterStages
 import com.netflix.spinnaker.orca.ext.firstBeforeStages
 import com.netflix.spinnaker.orca.ext.firstTask
+import com.netflix.spinnaker.orca.ext.upstreamStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
@@ -56,6 +58,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class StartStageHandler(
@@ -167,6 +170,31 @@ class StartStageHandler(
   }
 
   override val messageType = StartStage::class.java
+
+  private fun StageExecution.anyUpstreamStagesFailed(): Boolean {
+    val memo = ConcurrentHashMap<String, Boolean>()
+
+    fun anyUpstreamStagesFailed(stage: StageExecution): Boolean {
+      val stageId = stage.id
+      if (memo.containsKey(stageId)) {
+        return memo[stageId]!!
+      }
+      for (upstreamStage in stage.upstreamStages()) {
+        if (upstreamStage.status in listOf(ExecutionStatus.TERMINAL, ExecutionStatus.STOPPED, ExecutionStatus.CANCELED)) {
+          memo.putIfAbsent(stageId, true)
+          return true
+        }
+        if (upstreamStage.status == NOT_STARTED && anyUpstreamStagesFailed(upstreamStage)) {
+          memo.putIfAbsent(stageId, true)
+          return true
+        }
+      }
+      memo.putIfAbsent(stageId, false)
+      return false
+    }
+
+    return anyUpstreamStagesFailed(this)
+  }
 
   private fun StageExecution.plan() {
     builder().let { builder ->

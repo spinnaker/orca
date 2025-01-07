@@ -86,31 +86,6 @@ fun StageExecution.upstreamStages(): List<StageExecution> =
 fun StageExecution.allUpstreamStagesComplete(): Boolean =
   upstreamStages().all { it.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun StageExecution.anyUpstreamStagesFailed(): Boolean {
-  val memo = ConcurrentHashMap<String, Boolean>()
-
-  fun anyUpstreamStagesFailed(stage: StageExecution): Boolean {
-    val stageId = stage.id
-    if (memo.containsKey(stageId)) {
-      return memo[stageId]!!
-    }
-    for (upstreamStage in stage.upstreamStages()) {
-      if (upstreamStage.status in listOf(TERMINAL, STOPPED, CANCELED)) {
-        memo.putIfAbsent(stageId, true)
-        return true
-      }
-      if (upstreamStage.status == NOT_STARTED && anyUpstreamStagesFailed(upstreamStage)) {
-        memo.putIfAbsent(stageId, true)
-        return true
-      }
-    }
-    memo.putIfAbsent(stageId, false)
-    return false
-  }
-
-  return anyUpstreamStagesFailed(this)
-}
-
 fun StageExecution.syntheticStages(): List<StageExecution> =
   execution.stages.filter { it.parentStageId == id }
 
