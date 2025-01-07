@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.ext
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -28,6 +30,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * @return the stage's first before stage or `null` if there are none.
@@ -83,8 +86,30 @@ fun StageExecution.upstreamStages(): List<StageExecution> =
 fun StageExecution.allUpstreamStagesComplete(): Boolean =
   upstreamStages().all { it.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun StageExecution.anyUpstreamStagesFailed(): Boolean =
-  upstreamStages().any { it.status in listOf(TERMINAL, STOPPED, CANCELED) || it.status == NOT_STARTED && it.anyUpstreamStagesFailed() }
+fun StageExecution.anyUpstreamStagesFailed(): Boolean {
+  val memo = ConcurrentHashMap<String, Boolean>()
+
+  fun anyUpstreamStagesFailed(stage: StageExecution): Boolean {
+    val stageId = stage.id
+    if (memo.containsKey(stageId)) {
+      return memo[stageId]!!
+    }
+    for (upstreamStage in stage.upstreamStages()) {
+      if (upstreamStage.status in listOf(TERMINAL, STOPPED, CANCELED)) {
+        memo.putIfAbsent(stageId, true)
+        return true
+      }
+      if (upstreamStage.status == NOT_STARTED && anyUpstreamStagesFailed(upstreamStage)) {
+        memo.putIfAbsent(stageId, true)
+        return true
+      }
+    }
+    memo.putIfAbsent(stageId, false)
+    return false
+  }
+
+  return anyUpstreamStagesFailed(this)
+}
 
 fun StageExecution.syntheticStages(): List<StageExecution> =
   execution.stages.filter { it.parentStageId == id }
