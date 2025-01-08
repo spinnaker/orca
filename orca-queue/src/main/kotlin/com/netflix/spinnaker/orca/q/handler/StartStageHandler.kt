@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
-import com.netflix.spinnaker.orca.ext.anyUpstreamStagesFailed
 import com.netflix.spinnaker.orca.ext.firstAfterStages
 import com.netflix.spinnaker.orca.ext.firstBeforeStages
 import com.netflix.spinnaker.orca.ext.firstTask
@@ -172,7 +171,8 @@ class StartStageHandler(
   override val messageType = StartStage::class.java
 
   private fun StageExecution.anyUpstreamStagesFailed(): Boolean {
-    val memo = ConcurrentHashMap<String, Boolean>()
+    // Memoized map of stageId to the result of anyUpstreamStagesFailed() for each stage
+    val memo = HashMap<String, Boolean>()
 
     fun anyUpstreamStagesFailed(stage: StageExecution): Boolean {
       val stageId = stage.id
@@ -181,15 +181,15 @@ class StartStageHandler(
       }
       for (upstreamStage in stage.upstreamStages()) {
         if (upstreamStage.status in listOf(ExecutionStatus.TERMINAL, ExecutionStatus.STOPPED, ExecutionStatus.CANCELED)) {
-          memo.putIfAbsent(stageId, true)
+          memo[stageId] = true
           return true
         }
         if (upstreamStage.status == NOT_STARTED && anyUpstreamStagesFailed(upstreamStage)) {
-          memo.putIfAbsent(stageId, true)
+          memo[stageId] = true
           return true
         }
       }
-      memo.putIfAbsent(stageId, false)
+      memo[stageId] = false
       return false
     }
 
