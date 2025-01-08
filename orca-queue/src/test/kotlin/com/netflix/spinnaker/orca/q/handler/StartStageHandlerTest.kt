@@ -577,7 +577,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       afterGroup(::resetMocks)
 
-      it("handles a message for a stage that should not yet start in a timely manner") {
+      it("handles a message in a timely manner") {
         withTimeout(5000) {
           subject.handle(message)
           verify(queue).push(eq(message), any())
