@@ -50,6 +50,7 @@ class StageExecutionInternals {
               .collect(toList());
       List<StageExecution> syntheticStages =
           stage.getExecution().getStages().stream()
+              .filter(s -> s.getSyntheticStageOwner() != null)
               .filter(
                   s ->
                       previousStages.stream()
