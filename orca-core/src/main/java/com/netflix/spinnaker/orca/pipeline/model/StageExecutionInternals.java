@@ -41,12 +41,12 @@ class StageExecutionInternals {
       StageExecution stage, Set<String> visited, boolean directParentOnly) {
     visited.add(stage.getRefId());
 
-    if (!stage.getRequisiteStageRefIds().isEmpty() && !directParentOnly) {
+    if (!directParentOnly && !stage.getRequisiteStageRefIds().isEmpty()) {
       // Get stages this stage depends on via requisiteStageRefIds:
       List<StageExecution> previousStages =
           stage.getExecution().getStages().stream()
-              .filter(it -> stage.getRequisiteStageRefIds().contains(it.getRefId()))
               .filter(it -> !visited.contains(it.getRefId()))
+              .filter(it -> stage.getRequisiteStageRefIds().contains(it.getRefId()))
               .collect(toList());
       List<StageExecution> syntheticStages =
           stage.getExecution().getStages().stream()
