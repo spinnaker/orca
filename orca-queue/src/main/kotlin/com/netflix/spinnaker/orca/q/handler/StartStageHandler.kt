@@ -131,18 +131,16 @@ class StartStageHandler(
         }
 
       } catch (e: Exception) {
-        message.withStage { stage ->
-          log.error("Error running ${stage.type}[${stage.id}] stage for ${message.executionType}[${message.executionId}]", e)
+        log.error("Error running ${stage.type}[${stage.id}] stage for ${message.executionType}[${message.executionId}]", e)
 
-          stage.apply {
-            val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)
-            context["exception"] = exceptionDetails
-            context["beforeStagePlanningFailed"] = true
-          }
-
-          repository.storeStage(stage)
-          queue.push(CompleteStage(message))
+        stage.apply {
+          val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)
+          context["exception"] = exceptionDetails
+          context["beforeStagePlanningFailed"] = true
         }
+
+        repository.storeStage(stage)
+        queue.push(CompleteStage(message))
       }
     }
   }
