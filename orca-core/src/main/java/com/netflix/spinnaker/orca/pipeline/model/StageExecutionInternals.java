@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -43,10 +44,11 @@ class StageExecutionInternals {
 
     if (!directParentOnly && !stage.getRequisiteStageRefIds().isEmpty()) {
       // Get stages this stage depends on via requisiteStageRefIds:
+      Collection<String> requisiteStageRefIds = stage.getRequisiteStageRefIds();
       List<StageExecution> previousStages =
           stage.getExecution().getStages().stream()
               .filter(it -> !visited.contains(it.getRefId()))
-              .filter(it -> stage.getRequisiteStageRefIds().contains(it.getRefId()))
+              .filter(it -> requisiteStageRefIds.contains(it.getRefId()))
               .collect(toList());
       List<StageExecution> syntheticStages =
           stage.getExecution().getStages().stream()
