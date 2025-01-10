@@ -155,7 +155,7 @@ public class UnusedPipelineDisablePollingNotificationAgent
           .retrieveAllApplicationNames(PIPELINE)
           .forEach(
               app -> {
-                log.info("Evaluating " + app + " for unused pipelines");
+                log.debug("Evaluating " + app + " for unused pipelines");
                 List<String> pipelineConfigIds =
                     front50service.getPipelines(app, false, true).stream()
                         .map(p -> (String) p.get("id"))
@@ -205,9 +205,11 @@ public class UnusedPipelineDisablePollingNotificationAgent
             + app);
     front50PipelineConfigIdsNotExecuted.forEach(
         p -> {
-          log.info("Disabling pipeline execution " + p);
           if (!dryRun) {
+            log.debug("Disabling pipeline execution " + p);
             disableFront50PipelineConfigId(p);
+          } else {
+            log.info("DryRun mode: Disabling pipeline execution " + p);
           }
         });
   }

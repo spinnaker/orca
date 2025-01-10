@@ -472,16 +472,11 @@ class SqlExecutionRepository(
     criteria: ExecutionCriteria
   ): List<String> {
     var baseQueryPredicate = field("application").eq(application)
-    var table = if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_application_idx")
-    else PIPELINE.tableName
 
     if (criteria.statuses.isNotEmpty() && criteria.statuses.size != ExecutionStatus.values().size) {
       val statusStrings = criteria.statuses.map { it.toString() }
       baseQueryPredicate = baseQueryPredicate
         .and(field("status").`in`(*statusStrings.toTypedArray()))
-
-      table = if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_application_status_starttime_idx")
-      else PIPELINE.tableName
     }
     if (criteria.startTimeCutoff != null) {
       baseQueryPredicate = baseQueryPredicate
@@ -490,9 +485,9 @@ class SqlExecutionRepository(
         )
     }
 
-    withPool(poolName) {
+    withPool(readPoolName) {
       return jooq.selectDistinct(field("config_id"))
-        .from(table)
+        .from(PIPELINE.tableName)
         .where(baseQueryPredicate)
         .groupBy(field("config_id"))
         .fetch(0, String::class.java)

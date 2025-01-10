@@ -237,7 +237,7 @@ class DualExecutionRepository(
     return (
       primary.retrievePipelineConfigIdsForApplicationWithCriteria(application, criteria) +
         previous.retrievePipelineConfigIdsForApplicationWithCriteria(application, criteria)
-      )
+      ).distinct()
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
