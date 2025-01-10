@@ -80,20 +80,20 @@ class StartStageHandler(
   override fun handle(message: StartStage) {
     message.withStage { stage ->
       try {
-        stage.withAuth {
-          if (stage.anyUpstreamStagesFailed()) {
-            // this only happens in restart scenarios
-            log.warn("Tried to start stage ${stage.id} but something upstream had failed (executionId: ${message.executionId})")
-            queue.push(CompleteExecution(message))
-          } else if (stage.allUpstreamStagesComplete()) {
-            if (stage.status != NOT_STARTED) {
-              log.warn("Ignoring $message as stage is already ${stage.status}")
-            } else if (stage.shouldSkip()) {
-              queue.push(SkipStage(message))
-            } else if (stage.isAfterStartTimeExpiry()) {
-              log.warn("Stage is being skipped because its start time is after TTL (stageId: ${stage.id}, executionId: ${message.executionId})")
-              queue.push(SkipStage(stage))
-            } else {
+        if (stage.anyUpstreamStagesFailed()) {
+          // this only happens in restart scenarios
+          log.warn("Tried to start stage ${stage.id} but something upstream had failed (executionId: ${message.executionId})")
+          queue.push(CompleteExecution(message))
+        } else if (stage.allUpstreamStagesComplete()) {
+          if (stage.status != NOT_STARTED) {
+            log.warn("Ignoring $message as stage is already ${stage.status}")
+          } else if (stage.shouldSkip()) {
+            queue.push(SkipStage(message))
+          } else if (stage.isAfterStartTimeExpiry()) {
+            log.warn("Stage is being skipped because its start time is after TTL (stageId: ${stage.id}, executionId: ${message.executionId})")
+            queue.push(SkipStage(stage))
+          } else {
+            stage.withAuth {
               try {
                 // Set the startTime in case we throw an exception.
                 stage.startTime = clock.millis()
@@ -124,11 +124,12 @@ class StartStageHandler(
                 }
               }
             }
-          } else {
-            log.info("Re-queuing $message as upstream stages are not yet complete")
-            queue.push(message, retryDelay)
           }
+        } else {
+          log.info("Re-queuing $message as upstream stages are not yet complete")
+          queue.push(message, retryDelay)
         }
+
       } catch (e: Exception) {
         message.withStage { stage ->
           log.error("Error running ${stage.type}[${stage.id}] stage for ${message.executionType}[${message.executionId}]", e)
