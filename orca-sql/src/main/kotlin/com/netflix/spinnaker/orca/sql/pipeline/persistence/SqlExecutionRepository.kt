@@ -589,6 +589,14 @@ class SqlExecutionRepository(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
   ): Observable<PipelineExecution> {
+  return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria, false)
+  }
+
+  override fun retrievePipelinesForPipelineConfigId(
+    pipelineConfigId: String,
+    criteria: ExecutionCriteria,
+    includeNestedExecutions: Boolean
+  ): Observable<PipelineExecution> {
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
     // of executions triggered costly full table scans.
@@ -620,7 +628,7 @@ class SqlExecutionRepository(
         )
       }
 
-      return Observable.from(select.fetchExecutions(false))
+      return Observable.from(select.fetchExecutions(includeNestedExecutions))
     }
   }
 

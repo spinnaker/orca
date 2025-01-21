@@ -7,6 +7,30 @@ default:
   securityGroups: []
   vpc:
     securityGroups: []
+services:
+  fiat:
+    baseUrl: http://localhost:7003
+
+sql:
+  enabled: true
+  connectionPool:
+    jdbcUrl: jdbc:mysql://localhost:3306/orca?useSSL=false&useUnicode=true&characterEncoding=utf8
+    user: root
+    password: root_password
+    connectionTimeout: 5000
+    maxLifetime: 30000
+    maxPoolSize: 50
+  migration:
+    jdbcUrl: jdbc:mysql://localhost:3306/orca?useSSL=false&useUnicode=true&characterEncoding=utf8
+    user: root
+    password: root_password
+executionRepository:
+  redis:
+    enabled: false
+  sql:
+    enabled: true
+    pipelineRef:
+      enabled: true
 
 front50:
   enabled: true

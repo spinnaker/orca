@@ -489,6 +489,14 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
+  public @NotNull Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
+      @NotNull String pipelineConfigId,
+      @NotNull ExecutionRepository.ExecutionCriteria criteria,
+      Boolean includeNestedExecutions) {
+    return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria);
+  }
+
+  @Override
   public @Nonnull List<String> retrievePipelineConfigIdsForApplication(
       @Nonnull String application) {
     // TODO: not implemented yet - this method, at present, is primarily meant for the

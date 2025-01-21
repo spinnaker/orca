@@ -281,6 +281,18 @@ class InMemoryExecutionRepository : ExecutionRepository {
     )
   }
 
+  override fun retrievePipelinesForPipelineConfigId(
+    pipelineConfigId: String,
+    criteria: ExecutionCriteria,
+    includeNestedExecutions: Boolean?
+  ): Observable<PipelineExecution> {
+    return Observable.from(
+      pipelines.values
+        .filter { it.pipelineConfigId == pipelineConfigId }
+        .applyCriteria(criteria)
+    )
+  }
+
   override fun retrievePipelineConfigIdsForApplication(application: String): List<String> {
     return pipelines.values
       .filter { it.application == application }

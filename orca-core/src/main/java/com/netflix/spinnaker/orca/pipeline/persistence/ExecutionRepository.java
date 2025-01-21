@@ -99,6 +99,12 @@ public interface ExecutionRepository {
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
+  Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
+      @Nonnull String pipelineConfigId,
+      @Nonnull ExecutionCriteria criteria,
+      Boolean includeNestedExecutions);
+
+  @Nonnull
   Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);
 
   @Nonnull
