@@ -30,7 +30,6 @@ import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
@@ -82,7 +81,7 @@ abstract class TopApplicationExecutionCleanupPollingNotificationAgentSpec extend
 
   def setupSpec() {
     currentDatabase = getDatabase()
-    executionRepository = new com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository("test", currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", "readPoolName", null, [], new ExecutionCompressionProperties(), false, Mock(DataSource))
+    executionRepository = new com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository("test", currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", "readPoolName", null, [], new ExecutionCompressionProperties(), Mock(DataSource))
   }
 
   def cleanup() {
