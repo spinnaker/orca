@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -73,5 +74,14 @@ class PipelineExecutionImplTest {
 
     // then
     assertThat(pipelineExecution.getTotalSize().get()).isEqualTo(pipelineSize + stageSize);
+  }
+
+  @Test
+  void getMetadata() {
+    // given
+    pipelineExecution.setMetadata(new HashMap<String, Object>());
+
+    // then
+    assertThat(pipelineExecution.getMetadata()).isNotNull();
   }
 }
