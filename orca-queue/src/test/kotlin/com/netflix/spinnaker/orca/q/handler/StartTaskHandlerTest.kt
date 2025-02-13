@@ -40,10 +40,12 @@ import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.time.fixedClock
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -89,7 +91,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
       whenever(environment.getProperty("tasks.dummyTask.enabled", Boolean::class.java, true)) doReturn true
     }
 
@@ -146,7 +148,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
       whenever(environment.getProperty("tasks.dummyTask.enabled", Boolean::class.java, true)) doReturn false
     }
 
@@ -199,7 +201,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(PIPELINE, message.executionId)) doThrow NullPointerException()
+      whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doThrow NullPointerException()
     }
 
     afterGroup(::resetMocks)

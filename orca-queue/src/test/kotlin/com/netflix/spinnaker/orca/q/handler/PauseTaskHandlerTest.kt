@@ -27,8 +27,10 @@ import com.netflix.spinnaker.orca.q.PauseTask
 import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.orca.q.multiTaskStage
 import com.netflix.spinnaker.q.Queue
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -61,7 +63,7 @@ object PauseTaskHandlerTest : SubjectSpek<PauseTaskHandler>({
     val message = PauseTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

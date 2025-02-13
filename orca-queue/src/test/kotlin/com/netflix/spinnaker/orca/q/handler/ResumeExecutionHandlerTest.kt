@@ -25,7 +25,9 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ResumeExecution
 import com.netflix.spinnaker.orca.q.ResumeStage
 import com.netflix.spinnaker.q.Queue
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -74,7 +76,7 @@ object ResumeExecutionHandlerTest : SubjectSpek<ResumeExecutionHandler>({
     val message = ResumeExecution(pipeline.type, pipeline.id, pipeline.application)
 
     beforeGroup {
-      whenever(repository.retrieve(pipeline.type, pipeline.id)) doReturn pipeline
+      whenever(repository.retrieve(eq(pipeline.type), eq(pipeline.id), any())) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
