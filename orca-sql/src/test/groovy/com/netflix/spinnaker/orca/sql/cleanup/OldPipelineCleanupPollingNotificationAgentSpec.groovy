@@ -92,7 +92,6 @@ abstract class OldPipelineCleanupPollingNotificationAgentSpec extends Specificat
         null,
         [],
         new ExecutionCompressionProperties(),
-        false,
         Mock(DataSource))
   }
 
