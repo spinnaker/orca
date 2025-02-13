@@ -55,7 +55,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -331,14 +330,6 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return retrieveInternal(delegate, type, id);
   }
 
-  @NotNull
-  @Override
-  public PipelineExecution retrieve(
-      @NotNull ExecutionType type, @NotNull String id, @NotNull Boolean includeNestedExecutions)
-      throws ExecutionNotFoundException {
-    return retrieve(type, id);
-  }
-
   @Override
   public @Nonnull Observable<PipelineExecution> retrieve(@Nonnull ExecutionType type) {
     List<Observable<PipelineExecution>> observables =
@@ -486,14 +477,6 @@ public class RedisExecutionRepository implements ExecutionRepository {
     }
 
     return currentObservable;
-  }
-
-  @Override
-  public @NotNull Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
-      @NotNull String pipelineConfigId,
-      @NotNull ExecutionRepository.ExecutionCriteria criteria,
-      Boolean includeNestedExecutions) {
-    return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria);
   }
 
   @Override

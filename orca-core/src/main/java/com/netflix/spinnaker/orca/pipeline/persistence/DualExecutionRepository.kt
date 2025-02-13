@@ -160,10 +160,6 @@ class DualExecutionRepository(
     return select(type, id).retrieve(type, id)
   }
 
-  override fun retrieve(type: ExecutionType, id: String, includeNestedExecutions: Boolean): PipelineExecution {
-    return retrieve(type, id)
-  }
-
   override fun delete(type: ExecutionType, id: String) {
     return select(type, id).delete(type, id)
   }
@@ -207,17 +203,6 @@ class DualExecutionRepository(
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
-  ): Observable<PipelineExecution> {
-    return Observable.merge(
-      primary.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria),
-      previous.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria)
-    ).distinct { it.id }
-  }
-
-  override fun retrievePipelinesForPipelineConfigId(
-    pipelineConfigId: String,
-    criteria: ExecutionCriteria,
-    includeNestedExecutions: Boolean?
   ): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria),

@@ -73,10 +73,12 @@ public interface ExecutionRepository {
       throws ExecutionNotFoundException;
 
   @Nonnull
-  @Metered(metricName = "retrieveById")
-  PipelineExecution retrieve(
-      @Nonnull ExecutionType type, @Nonnull String id, Boolean includeNestedExecutions)
-      throws ExecutionNotFoundException;
+  default PipelineExecution retrieve(
+      @Nonnull ExecutionType type, @Nonnull String id, boolean includeNestedExecutions)
+      throws ExecutionNotFoundException {
+    // Default behavior: ignore `includeNestedExecutions`
+    return retrieve(type, id);
+  }
 
   void delete(@Nonnull ExecutionType type, @Nonnull String id);
 
@@ -99,10 +101,13 @@ public interface ExecutionRepository {
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
-  Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
+  default Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId,
       @Nonnull ExecutionCriteria criteria,
-      Boolean includeNestedExecutions);
+      Boolean includeNestedExecutions) {
+    // Default behavior: ignore `includeNestedExecutions`
+    return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria);
+  }
 
   @Nonnull
   Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);
