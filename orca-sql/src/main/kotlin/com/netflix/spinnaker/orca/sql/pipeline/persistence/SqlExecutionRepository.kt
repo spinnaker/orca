@@ -419,10 +419,10 @@ class SqlExecutionRepository(
     )
 
   override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
-    return retrieve(type, criteria, null, includeNestedExecutions = false)
+    return retrieve(type, criteria, null)
   }
 
-  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?, includeNestedExecutions: Boolean): Observable<PipelineExecution> {
+  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?, includeNestedExecutions: Boolean = false): Observable<PipelineExecution> {
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
@@ -1330,6 +1330,7 @@ class SqlExecutionRepository(
     type: ExecutionType,
     limit: Int,
     cursor: String?,
+    includeNestedExecutions: Boolean = false,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
   ): Collection<PipelineExecution> {
     withPool(readPoolName) {
@@ -1356,7 +1357,7 @@ class SqlExecutionRepository(
         }
       )
 
-      return select.fetchExecutions(false)
+      return select.fetchExecutions(includeNestedExecutions)
     }
   }
 
