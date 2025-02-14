@@ -83,7 +83,7 @@ import java.lang.System.currentTimeMillis
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.stream.Collectors.toList
-import javax.activation.DataSource
+import javax.sql.DataSource
 import kotlin.collections.Collection
 import kotlin.collections.Iterable
 import kotlin.collections.Iterator
@@ -126,7 +126,8 @@ class SqlExecutionRepository(
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
   private val compressionProperties: ExecutionCompressionProperties,
-  private val dataSource: javax.sql.DataSource
+  private val pipelineRefEnabled: Boolean,
+  private val dataSource: DataSource
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -608,7 +609,7 @@ class SqlExecutionRepository(
         .fetch()
 
       log.debug("getting stage information for all the executions found so far")
-      return ExecutionMapper(mapper, stageReadSize,compressionProperties).map(baseQuery.intoResultSet(), jooq, false)
+      return ExecutionMapper(mapper, stageReadSize,compressionProperties, pipelineRefEnabled).map(baseQuery.intoResultSet(), jooq, false)
     }
   }
 
@@ -1411,7 +1412,7 @@ class SqlExecutionRepository(
   }
 
   private fun SelectForUpdateStep<out Record>.fetchExecutions(fetchNestedExecution: Boolean) =
-    ExecutionMapper(mapper, stageReadSize, compressionProperties).map(fetch().intoResultSet(), jooq, fetchNestedExecution)
+    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq, fetchNestedExecution)
 
   private fun SelectForUpdateStep<out Record>.fetchExecution(includeNestedExecutions: Boolean) =
     fetchExecutions(includeNestedExecutions).firstOrNull()

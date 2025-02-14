@@ -38,7 +38,8 @@ import java.nio.charset.StandardCharsets
 class ExecutionMapper(
   private val mapper: ObjectMapper,
   private val stageBatchSize: Int,
-  private val compressionProperties: ExecutionCompressionProperties
+  private val compressionProperties: ExecutionCompressionProperties,
+  private val pipelineRefEnabled: Boolean
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -79,9 +80,7 @@ class ExecutionMapper(
         mapper.readValue<PipelineExecution>(body)
           .also {
             execution ->
-            if (includeNestedExecutions) {
-              convertPipelineRefTrigger(execution, context)
-            }
+            convertPipelineRefTrigger(execution, context, includeNestedExecutions)
             execution.setSize(body.length.toLong())
             results.add(execution)
             execution.partition = rs.getString("partition")
@@ -139,9 +138,9 @@ class ExecutionMapper(
   }
 
   @VisibleForTesting
-  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext) {
+  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext, includeNestedExecutions: Boolean) {
     val trigger = execution.trigger
-    if (trigger is PipelineRefTrigger) {
+    if (trigger is PipelineRefTrigger && (!pipelineRefEnabled || includeNestedExecutions)) {
       val parentExecution = fetchParentExecution(execution.type, trigger, context)
 
       if (parentExecution == null) {
@@ -162,7 +161,7 @@ class ExecutionMapper(
     return context
       .selectExecution(type, compressionProperties)
       .where(field("id").eq(trigger.parentExecutionId))
-      .fetchExecutions(mapper, 200, compressionProperties, context)
+      .fetchExecutions(mapper, 200, compressionProperties, context, pipelineRefEnabled)
       .firstOrNull()
   }
 }

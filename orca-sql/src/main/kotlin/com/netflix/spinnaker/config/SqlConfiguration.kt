@@ -23,6 +23,7 @@ import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.lock.RunOnLockAcquired
 import com.netflix.spinnaker.orca.lock.RunOnShedLockAcquired
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
@@ -94,6 +95,7 @@ class SqlConfiguration {
       interlink = interlink.orElse(null),
       executionRepositoryListeners = executionRepositoryListeners,
       compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefProperties.enabled,
       dataSource = dataSource
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
@@ -121,6 +123,7 @@ class SqlConfiguration {
       orcaSqlProperties.stageReadSize,
       poolName,
       compressionProperties = compressionProperties,
+      pipelineRefEnabled = pipelineRefProperties.enabled,
       dataSource = dataSource
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
