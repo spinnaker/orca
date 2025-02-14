@@ -598,6 +598,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
           null,
           emptyList(),
           executionCompressionPropertiesEnabled,
+          false,
           mockedAbstractRoutingDataSource
         )
 
@@ -623,6 +624,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
           null,
           emptyList(),
           executionCompressionPropertiesEnabled,
+          false,
           mockedAbstractRoutingDataSource
         )
 
@@ -630,6 +632,100 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         assertThat(sqlExecutionRepository.readPoolName).isEqualTo(readPoolName)
       }
 
+    }
+
+    context("Execution repository can include or skip nested executions when PipelineRef is enabled") {
+      val testType = ExecutionType.PIPELINE
+      val testApplication = "test-application"
+      val parentExecutionPipeline = PipelineExecutionImpl(testType, testApplication)
+
+      val pipelineExecutionWithPipelineTrigger = PipelineExecutionImpl(testType, testApplication).also {
+        it.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+      }.apply { stage {} }
+      val pipelineIdWithPipelineTrigger = pipelineExecutionWithPipelineTrigger.id
+
+      before {
+        this.addCustomDeserializerWithFeatureFlagEnabled()
+        sqlExecutionRepositoryWithPipelineRefOnly.store(parentExecutionPipeline)
+      }
+
+      test("retrieve execution contains PipelineTrigger if includeNestedExecutions=true") {
+        sqlExecutionRepositoryWithPipelineRefOnly.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        val actualPipelineExecution = sqlExecutionRepositoryWithPipelineRefOnly.retrieve(testType, pipelineIdWithPipelineTrigger, true)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineTrigger::class.java)
+      }
+
+      test("retrieve execution contains PipelineRefTrigger if includeNestedExecutions=false") {
+        sqlExecutionRepositoryWithPipelineRefOnly.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        val actualPipelineExecution = sqlExecutionRepositoryWithPipelineRefOnly.retrieve(testType, pipelineIdWithPipelineTrigger, false)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineRefTrigger::class.java)
+      }
+    }
+
+    context("Execution repository can include or skip nested executions when PipelineRef is disabled") {
+      val testType = ExecutionType.PIPELINE
+      val testApplication = "test-application"
+      val parentExecutionPipeline = PipelineExecutionImpl(testType, testApplication)
+
+      val pipelineExecutionWithPipelineTrigger = PipelineExecutionImpl(testType, testApplication).also {
+        it.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+      }.apply { stage {} }
+      val pipelineIdWithPipelineTrigger = pipelineExecutionWithPipelineTrigger.id
+
+      before {
+        this.addCustomDeserializerWithFeatureFlagDisabled()
+        sqlExecutionRepositoryNoCompression.store(parentExecutionPipeline)
+      }
+
+      test("retrieve execution contains PipelineTrigger if includeNestedExecutions=true") {
+        sqlExecutionRepositoryNoCompression.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineIdWithPipelineTrigger, true)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineTrigger::class.java)
+      }
+
+      test("retrieve execution contains PipelineTrigger if includeNestedExecutions=false") {
+        sqlExecutionRepositoryNoCompression.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineIdWithPipelineTrigger, false)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineTrigger::class.java)
+      }
+
+      test("retrieve execution contains PipelineTrigger if includeNestedExecutions=false and execution in repository has a PipelineRefTrigger") {
+        //simulate a pipeline with pipelineTrigger is stored as pipelineRef
+        this.addCustomDeserializerWithFeatureFlagEnabled()
+        sqlExecutionRepositoryNoCompression.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        //disabling the flag simulate the flag was disabled but we still have an execution with PipelineRefTrigger
+        this.addCustomDeserializerWithFeatureFlagDisabled()
+        val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineIdWithPipelineTrigger, false)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineTrigger::class.java)
+      }
+
+      test("retrieve execution contains PipelineTrigger if includeNestedExecutions=true and execution in repository has a PipelineRefTrigger") {
+        //simulate a pipeline with pipelineTrigger is stored as pipelineRef
+        this.addCustomDeserializerWithFeatureFlagEnabled()
+        sqlExecutionRepositoryNoCompression.store(pipelineExecutionWithPipelineTrigger)
+        pipelineExecutionWithPipelineTrigger.trigger = PipelineTrigger(parentExecution = parentExecutionPipeline)
+
+        //disabling the flag simulate the flag was disabled but we still have an execution with PipelineRefTrigger
+        this.addCustomDeserializerWithFeatureFlagDisabled()
+        val actualPipelineExecution = sqlExecutionRepositoryNoCompression.retrieve(testType, pipelineIdWithPipelineTrigger, true)
+        assertThat(actualPipelineExecution).isEqualTo(pipelineExecutionWithPipelineTrigger)
+        assertThat(actualPipelineExecution.trigger).isInstanceOf(PipelineTrigger::class.java)
+      }
     }
   }
 
@@ -668,6 +764,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesEnabled,
+        false,
         mockDataSource
       )
 
@@ -688,6 +785,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesDisabled,
+        false,
         mockDataSource
       )
 
@@ -711,6 +809,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesReadOnly,
+        false,
         mockDataSource
       )
 
@@ -727,6 +826,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesDisabled,
+        true,
         mockDataSource
       )
 
@@ -743,6 +843,7 @@ class SqlExecutionRepositoryTest : JUnit5Minutests {
         null,
         emptyList(),
         executionCompressionPropertiesEnabled,
+        true,
         mockDataSource
       )
 

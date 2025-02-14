@@ -111,6 +111,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
             interlink,
             [],
             new ExecutionCompressionProperties(enabled: compression),
+            false,
             Mock(DataSource)),
         "namespace")
   }

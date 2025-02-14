@@ -52,7 +52,7 @@ class ExecutionMapperTest : JUnit5Minutests {
     context("handle body decompression") {
       val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, ExecutionCompressionProperties().apply {
         enabled = true
-      })
+      }, false)
 
       val mockedResultSet = mock<ResultSet>()
 
@@ -86,26 +86,39 @@ class ExecutionMapperTest : JUnit5Minutests {
 
       test("conversion ignored when trigger is not PipelineRef") {
         val mockedExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(DefaultTrigger(type = "default")).`when`(mockedExecution).trigger
-        spyMapper.convertPipelineRefTrigger(mockedExecution, database)
+        spyMapper.convertPipelineRefTrigger(mockedExecution, database, false)
         verify(mockedExecution, times(1)).trigger
         verify(spyMapper, times(0)).fetchParentExecution(any(), any(), any())
       }
 
       test("conversion is aborted when trigger is PipelineRef but parentExecution not found") {
         val mockedExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(PipelineRefTrigger(parentExecutionId = "test-parent-id")).`when`(mockedExecution).trigger
         doReturn(ExecutionType.PIPELINE).`when`(mockedExecution).type
         doReturn(null).`when`(spyMapper).fetchParentExecution(any(), any(), any())
-        spyMapper.convertPipelineRefTrigger(mockedExecution, database)
+        spyMapper.convertPipelineRefTrigger(mockedExecution, database, true)
         verify(mockedExecution, times(1)).trigger
         verify(spyMapper, times(1)).fetchParentExecution(any(), any(), any())
+      }
+
+      test("conversion ignored when trigger is PipelineRef but includeNestedExecutions is false") {
+        val mockedExecution = mock<PipelineExecution>()
+        doReturn(PipelineRefTrigger(parentExecutionId = "test-parent-id")).`when`(mockedExecution).trigger
+        doReturn(ExecutionType.PIPELINE).`when`(mockedExecution).type
+
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
+        val spyMapper = Mockito.spy(mapper)
+
+        spyMapper.convertPipelineRefTrigger(mockedExecution, database, false)
+        verify(mockedExecution, times(1)).trigger
+        verify(spyMapper, times(0)).fetchParentExecution(any(), any(), any())
       }
 
       test("conversion is processed when trigger is PipelineRef") {
@@ -129,12 +142,56 @@ class ExecutionMapperTest : JUnit5Minutests {
         }
 
         val mockedParentExecution = mock<PipelineExecution>()
-        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties)
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, true)
         val spyMapper = Mockito.spy(mapper)
 
         doReturn(mockedParentExecution).`when`(spyMapper).fetchParentExecution(any(), any(), any())
 
-        spyMapper.convertPipelineRefTrigger(execution, database)
+        spyMapper.convertPipelineRefTrigger(execution, database, true)
+
+        expectThat(execution.trigger) {
+          isA<PipelineTrigger>()
+          get { this.correlationId }.isEqualTo(correlationId)
+          get { this.parameters }.isEqualTo(parameters)
+          get { this.artifacts }.isEqualTo(artifacts)
+          get { this.resolvedExpectedArtifacts }.isEqualTo(resolvedExpectedArtifact)
+          get { this.other }.isEqualTo(otherTest)
+          get { this.notifications }.isEmpty()
+        }
+
+        expectThat(execution.trigger as PipelineTrigger)
+          .get(PipelineTrigger::parentExecution).isEqualTo(mockedParentExecution)
+
+        verify(spyMapper, times(1)).fetchParentExecution(any(), any(), any())
+      }
+
+      test("conversion is processed when trigger is PipelineRef and feature flag is disabled") {
+        val correlationId = "test-correlation"
+        val parentExecutionId = "test-execution"
+        val parameters = mutableMapOf<String, Any>("test-parameter" to "test-body")
+        val artifacts = mutableListOf(Artifact.builder().build())
+        val resolvedExpectedArtifact = mutableListOf(ExpectedArtifact.builder().boundArtifact(Artifact.builder().build()).build())
+        val otherTest = mutableMapOf<String, Any>("test-other" to "other-body")
+
+        val execution = PipelineExecutionImpl(ExecutionType.PIPELINE, "test-app").apply {
+          trigger = PipelineRefTrigger(
+            correlationId = correlationId,
+            parentExecutionId = parentExecutionId,
+            parameters = parameters,
+            artifacts = artifacts
+          ).apply {
+            resolvedExpectedArtifacts = resolvedExpectedArtifact
+            other = otherTest
+          }
+        }
+
+        val mockedParentExecution = mock<PipelineExecution>()
+        val mapper = ExecutionMapper(mapper = ObjectMapper(), stageBatchSize = 200, compressionProperties = compressionProperties, false)
+        val spyMapper = Mockito.spy(mapper)
+
+        doReturn(mockedParentExecution).`when`(spyMapper).fetchParentExecution(any(), any(), any())
+
+        spyMapper.convertPipelineRefTrigger(execution, database, true)
 
         expectThat(execution.trigger) {
           isA<PipelineTrigger>()

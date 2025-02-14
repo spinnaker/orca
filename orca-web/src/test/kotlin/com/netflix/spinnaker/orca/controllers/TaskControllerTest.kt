@@ -59,6 +59,7 @@ class TaskControllerTest : JUnit5Minutests {
       mapper = OrcaObjectMapper.getInstance(),
       retryProperties = RetryProperties(),
       compressionProperties = ExecutionCompressionProperties(),
+      pipelineRefEnabled = false,
       dataSource = mock()
     )
 
