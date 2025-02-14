@@ -134,6 +134,7 @@ class SqlTestConfig {
     orcaSqlProperties.stageReadSize,
     interlink = null,
     compressionProperties = compressionProperties,
+    pipelineRefEnabled = false,
     dataSource = dataSource
   )
 
