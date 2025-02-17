@@ -39,7 +39,9 @@ import com.netflix.spinnaker.orca.q.stageWithSyntheticBefore
 import com.netflix.spinnaker.orca.q.stageWithSyntheticBeforeAndNoTasks
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -82,7 +84,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1<1").status = status
           pipeline.stageByRef("1<2").status = RUNNING
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -111,7 +113,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1<1").status = status
           pipeline.stageByRef("1<2").status = TERMINAL
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -143,7 +145,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
         and("they have not started yet") {
           beforeGroup {
-            whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+            whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -160,7 +162,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         and("they have already started") {
           beforeGroup {
             pipeline.stageByRef("1").tasks.first().status = RUNNING
-            whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+            whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -189,7 +191,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
         beforeGroup {
           pipeline.stageByRef("1").beforeStages().forEach { it.status = status }
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -222,7 +224,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1>1").status = status
           pipeline.stageByRef("1>2").status = RUNNING
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -251,7 +253,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1>1").status = status
           pipeline.stageByRef("1>2").status = TERMINAL
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -280,7 +282,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1>1").status = status
           pipeline.stageByRef("1>2").status = SUCCEEDED
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)

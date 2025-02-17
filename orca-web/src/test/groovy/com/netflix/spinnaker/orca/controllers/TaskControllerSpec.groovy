@@ -270,7 +270,7 @@ class TaskControllerSpec extends Specification {
 
   void '/applications/{application}/evaluateExpressions precomputes values'() {
     given:
-    executionRepository.retrieve(ExecutionType.PIPELINE, "1") >> {
+    executionRepository.retrieve(ExecutionType.PIPELINE, "1", true) >> {
       pipeline {
         id = "1"
         application = "doesn't matter"
@@ -307,7 +307,7 @@ class TaskControllerSpec extends Specification {
       [pipelineConfigId: "3", id: "started-5", application: "covfefe", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old-3']
     ]
 
-    executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigId("1", _, true) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       pipeline {
@@ -317,7 +317,7 @@ class TaskControllerSpec extends Specification {
         pipelineConfigId = config.pipelineConfigId
       }
     })
-    executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigId("2", _, true) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "2"
     }.collect { config ->
       pipeline {
@@ -327,7 +327,7 @@ class TaskControllerSpec extends Specification {
         pipelineConfigId = config.pipelineConfigId
       }
     })
-    executionRepository.retrievePipelinesForPipelineConfigId("3", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigId("3", _, true) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "3"
     }.collect { config ->
       pipeline {
