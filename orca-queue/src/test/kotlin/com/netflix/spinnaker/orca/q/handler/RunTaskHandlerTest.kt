@@ -1519,7 +1519,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           whenever(timeoutOverrideTask.execute(any())) doReturn taskResult
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(timeoutOverrideTask, stage)) doReturn stage }
           taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(timeoutOverrideTask, stage, taskResult)) doReturn taskResult }
-          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
           setupRetriableLock(true, retriableLock)
         }
 
