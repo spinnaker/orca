@@ -17,6 +17,8 @@
 
 package com.netflix.spinnaker.orca.webhook.config;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import com.netflix.spinnaker.kork.crypto.TrustStores;
 import com.netflix.spinnaker.kork.crypto.X509Identity;
 import com.netflix.spinnaker.kork.crypto.X509IdentitySource;
@@ -40,8 +42,15 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.*;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSource;
+import okio.Okio;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -49,6 +58,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -67,6 +77,8 @@ import org.springframework.web.client.RestTemplate;
 @EnableConfigurationProperties(WebhookProperties.class)
 public class WebhookConfiguration {
   private final WebhookProperties webhookProperties;
+
+  private final Logger log = LoggerFactory.getLogger(WebhookConfiguration.class);
 
   @Autowired
   public WebhookConfiguration(WebhookProperties webhookProperties) {
@@ -88,8 +100,10 @@ public class WebhookConfiguration {
 
   @Bean
   public ClientHttpRequestFactory webhookRequestFactory(
+      Environment environment,
       OkHttpClientConfigurationProperties okHttpClientConfigurationProperties,
-      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions)
+      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
+      WebhookProperties webhookProperties)
       throws IOException {
     var trustManager = webhookX509TrustManager();
     var sslSocketFactory = getSSLSocketFactory(trustManager);
@@ -98,13 +112,48 @@ public class WebhookConfiguration {
             .sslSocketFactory(sslSocketFactory, trustManager)
             .addNetworkInterceptor(
                 chain -> {
-                  Response response = chain.proceed(chain.request());
+                  Request request = chain.request();
 
-                  if (webhookProperties.isVerifyRedirects() && response.isRedirect()) {
-                    // verify that we are not redirecting to a restricted url
+                  validateRequestSize(request, webhookProperties.getMaxRequestBytes());
+
+                  if (webhookProperties.isAuditLoggingEnabled()) {
+                    log.info(
+                        "sending webhook request: {},{},{},{}",
+                        kv("httpMethod", request.method()),
+                        kv("url", request.url()),
+                        kv("headerByteCount", request.headers().byteCount()),
+                        kv("contentLength", getRequestBodyContentLength(request)));
+                  }
+
+                  Response response = chain.proceed(request);
+
+                  validateResponseSize(response, webhookProperties.getMaxResponseBytes());
+
+                  if (webhookProperties.isAuditLoggingEnabled()) {
+                    log.info(
+                        "received webhook response: {},{},{},{},{},{}",
+                        kv("httpMethod", response.request().method()),
+                        kv("url", response.request().url()),
+                        kv("responseCode", response.code()),
+                        kv("headerByteCount", response.headers().byteCount()),
+                        kv("contentLength", getResponseBodyContentLength(response)),
+                        kv(
+                            "latencyMs",
+                            response.receivedResponseAtMillis() - response.sentRequestAtMillis()));
+                  }
+
+                  if (response.isRedirect()) {
                     String redirectLocation = response.header("Location");
-                    if (redirectLocation != null && !redirectLocation.trim().startsWith("/")) {
-                      userConfiguredUrlRestrictions.validateURI(redirectLocation);
+                    if (!webhookProperties.isFollowRedirects()) {
+                      throw new IllegalStateException(
+                          "redirects disabled, not visiting " + redirectLocation);
+                    }
+
+                    if (webhookProperties.isVerifyRedirects()) {
+                      // verify that we are not redirecting to a restricted url
+                      if (redirectLocation != null && !redirectLocation.trim().startsWith("/")) {
+                        userConfiguredUrlRestrictions.validateURI(redirectLocation);
+                      }
                     }
                   }
 
@@ -117,11 +166,175 @@ public class WebhookConfiguration {
 
     var client = builder.build();
     var requestFactory = new OkHttp3ClientHttpRequestFactory(client);
-    requestFactory.setReadTimeout(
-        Math.toIntExact(okHttpClientConfigurationProperties.getReadTimeoutMs()));
-    requestFactory.setConnectTimeout(
-        Math.toIntExact(okHttpClientConfigurationProperties.getConnectTimeoutMs()));
+    long readTimeoutMs =
+        (environment.containsProperty("webhook.readTimeoutMs")
+                || environment.containsProperty("webhook.read-timeout-ms"))
+            ? webhookProperties.getReadTimeoutMs()
+            : okHttpClientConfigurationProperties.getReadTimeoutMs();
+    long connectTimeoutMs =
+        (environment.containsProperty("webhook.connectTimeoutMs")
+                || environment.containsProperty("webhook.connect-timeout-ms"))
+            ? webhookProperties.getConnectTimeoutMs()
+            : okHttpClientConfigurationProperties.getConnectTimeoutMs();
+
+    requestFactory.setReadTimeout(Math.toIntExact(readTimeoutMs));
+    requestFactory.setConnectTimeout(Math.toIntExact(connectTimeoutMs));
     return requestFactory;
+  }
+
+  /** Return the content length of a request body, or -1 for unknown. */
+  private long getRequestBodyContentLength(Request request) throws IOException {
+    RequestBody requestBody = request.body();
+    if (requestBody == null) {
+      return 0;
+    }
+
+    try {
+      return requestBody.contentLength();
+    } catch (IOException e) {
+      log.error("exception retrieving content length of request to {}", request.url(), e);
+      throw e;
+    }
+  }
+
+  /** Return if the request size is valid. Throw an exception otherwise. */
+  private void validateRequestSize(Request request, long maxRequestBytes) throws IOException {
+    if (maxRequestBytes <= 0L) {
+      return;
+    }
+
+    long headerSize = request.headers().byteCount();
+
+    // If the headers are already too big, no need to deal with the body size
+    if (headerSize > maxRequestBytes) {
+      String message =
+          String.format(
+              "rejecting request to %s with %s byte(s) of headers, maxRequestBytes: %s",
+              request.url(), headerSize, maxRequestBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
+    }
+
+    RequestBody requestBody = request.body();
+    if (requestBody == null) {
+      return;
+    }
+
+    long contentLength = getRequestBodyContentLength(request);
+    if (contentLength == -1) {
+      // Given that OkHttp3ClientHttpRequestFactory.buildRequest (called by
+      // OkHttp3ClientRequest.executeInternal) has a byte array argument, this
+      // doesn't seem possible.  Reject the request in case it ends up being
+      // too big.  Yes, this is paranoid, but seems safer.
+      String message =
+          String.format(
+              "unable to verify size of body in request to %s, content length not set",
+              request.url());
+      log.error(message);
+      throw new IllegalStateException(message);
+    }
+
+    long totalSize = headerSize + contentLength;
+    if (totalSize > maxRequestBytes) {
+      String message =
+          String.format(
+              "rejecting request to %s with %s byte body, maxRequestBytes: %s",
+              request.url(), totalSize, maxRequestBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  /** Return the content length of a response body */
+  private long getResponseBodyContentLength(Response response) throws IOException {
+    ResponseBody responseBody = response.body();
+    if (responseBody == null) {
+      return 0;
+    }
+
+    long contentLength = responseBody.contentLength();
+    if (contentLength != -1) {
+      return contentLength;
+    }
+
+    // Nothing has read the body yet.  This is the likely case.  Peek into the body to get the
+    // length.  See okhttp.Response.peekBody for inspiration.
+    //
+    // contentLength = responseBody.bytes().length
+    //
+    // consumes the response such that future processing fails since the underlying buffer is
+    // closed.
+    //
+    // Note also that responseBody.source().getBuffer().size() doesn't work reliably.
+    BufferedSource peeked = responseBody.source().peek();
+    return peeked.readAll(Okio.blackhole());
+  }
+
+  /** Return if the response size is valid. Throw an exception otherwise. */
+  private void validateResponseSize(Response response, long maxResponseBytes) throws IOException {
+    if (maxResponseBytes <= 0L) {
+      return;
+    }
+
+    long headerSize = response.headers().byteCount();
+
+    // If the headers are already too big, no need to deal with the body size
+    if (headerSize > maxResponseBytes) {
+      String message =
+          String.format(
+              "rejecting response from %s with %s byte(s) of headers, maxResponseBytes: %s",
+              response.request().url(), headerSize, maxResponseBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
+    }
+
+    ResponseBody responseBody = response.body();
+    if (responseBody == null) {
+      return;
+    }
+
+    long contentLength = responseBody.contentLength();
+    if (contentLength == -1) {
+      // Nothing has read the body yet.  This is the likely case.  Peek into the
+      // body to see if it's too long.  See okhttp.Response.peekBody for
+      // inspiration.  Note that e.g.
+      //
+      // contentLength = responseBody.bytes().length
+      //
+      // consumes the response such that future processing fails.  The underlying buffer is closed.
+      BufferedSource peeked = responseBody.source().peek();
+
+      long remainingAllowedBytes = maxResponseBytes - headerSize; // >= 0.  Yes, this could be 0.
+      try {
+        // Request one more than the number of allowed bytes remaining.  If that
+        // succeeds, the response is too long.
+        if (peeked.request(remainingAllowedBytes + 1)) {
+          String message =
+              String.format(
+                  "rejecting response from %s. headers: %s byte(s), body > %s byte(s), maxResponseBytes: %s",
+                  response.request().url(), headerSize, remainingAllowedBytes, maxResponseBytes);
+          log.info(message);
+          throw new IllegalArgumentException(message);
+        }
+
+        // There aren't enough bytes in the response to satisfy the peek
+        // request.  In other words, the response is short enough to be valid.
+        return;
+      } catch (IOException e) {
+        log.error("exception peeking into response from {}", response.request().url(), e);
+        throw e;
+      }
+    }
+
+    long totalSize = headerSize + contentLength;
+    if (totalSize > maxResponseBytes) {
+      String message =
+          String.format(
+              "rejecting %s byte response from %s, maxResponseBytes: %s",
+              totalSize, response.request().url(), maxResponseBytes);
+      log.info(message);
+      throw new IllegalArgumentException(message);
+    }
   }
 
   private X509TrustManager webhookX509TrustManager() {

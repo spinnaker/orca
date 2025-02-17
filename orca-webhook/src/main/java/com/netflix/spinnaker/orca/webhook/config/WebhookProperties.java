@@ -58,11 +58,49 @@ public class WebhookProperties {
 
   private boolean verifyRedirects = true;
 
+  /** If true, follow redirects. If false, don't follow redirects. */
+  private boolean followRedirects = true;
+
   private List<Integer> defaultRetryStatusCodes = List.of(429);
 
   // For testing *only*
   private boolean insecureSkipHostnameVerification = false;
   private boolean insecureTrustSelfSigned = false;
+
+  /** True to enable matching against allowedRequests. */
+  private boolean allowedRequestsEnabled = false;
+
+  /**
+   * Only specified http method + hosts are allowed. An empty list means no requests are allowed.
+   */
+  private List<AllowedRequest> allowedRequests = new ArrayList<>();
+
+  /**
+   * The maximum number of header + body bytes allowed in a webhook request, or <= 0 to allow any
+   * size.
+   */
+  private long maxRequestBytes = 0L;
+
+  /**
+   * The maximum number of header + body bytes allowed in a webhook response, or <= 0 to allow any
+   * size.
+   */
+  private long maxResponseBytes = 0L;
+
+  /**
+   * If the timeout expires before a connection can be established, a SocketTimeoutException is
+   * raised. A timeout of 0 is considered infinite.
+   */
+  private long connectTimeoutMs = 15000L;
+
+  /**
+   * If the timeout expires before there is data available in the input stream to read, a
+   * SocketTimeoutException is raised. A timeout of 0 is considered infinite.
+   */
+  private long readTimeoutMs = 20000L;
+
+  /** True to enable audit logging */
+  private boolean auditLoggingEnabled = false;
 
   @Data
   @NoArgsConstructor
@@ -86,6 +124,16 @@ public class WebhookProperties {
 
     private String identityKeyPem;
     private String identityCertPem;
+  }
+
+  @Data
+  @NoArgsConstructor
+  public static class AllowedRequest {
+    /** The allowed http method(s) (e.g. GET, POST, PUT) */
+    private List<String> httpMethods;
+
+    /** The url must start with this string to be considered valid. */
+    private String urlPrefix;
   }
 
   @Data
