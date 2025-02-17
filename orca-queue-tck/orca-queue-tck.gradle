@@ -31,6 +31,7 @@ dependencies {
   implementation(project(":keiko-spring"))
   implementation("junit:junit")
   implementation("org.springframework:spring-test")
+  implementation project(":orca-sql")
 
   implementation("org.jetbrains.spek:spek-api")
   implementation("org.jetbrains.spek:spek-subject-extension")

@@ -69,7 +69,7 @@ class ExecutionMapper(
     }
   }
 
-  fun map(rs: ResultSet, context: DSLContext): Collection<PipelineExecution> {
+  fun map(rs: ResultSet, context: DSLContext, includeNestedExecutions: Boolean): Collection<PipelineExecution> {
     val results = mutableListOf<PipelineExecution>()
     val executionMap = mutableMapOf<String, PipelineExecution>()
     val legacyMap = mutableMapOf<String, String>()
@@ -80,7 +80,7 @@ class ExecutionMapper(
         mapper.readValue<PipelineExecution>(body)
           .also {
             execution ->
-            convertPipelineRefTrigger(execution, context)
+            convertPipelineRefTrigger(execution, context, includeNestedExecutions)
             execution.setSize(body.length.toLong())
             results.add(execution)
             execution.partition = rs.getString("partition")
@@ -138,9 +138,9 @@ class ExecutionMapper(
   }
 
   @VisibleForTesting
-  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext) {
+  fun convertPipelineRefTrigger(execution: PipelineExecution, context: DSLContext, includeNestedExecutions: Boolean) {
     val trigger = execution.trigger
-    if (trigger is PipelineRefTrigger) {
+    if (trigger is PipelineRefTrigger && (!pipelineRefEnabled || includeNestedExecutions)) {
       val parentExecution = fetchParentExecution(execution.type, trigger, context)
 
       if (parentExecution == null) {
