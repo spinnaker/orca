@@ -243,7 +243,7 @@ class TaskController {
     List<String> ids = pipelineConfigIds.split(',')
 
     List<PipelineExecution> allPipelines = rx.Observable.merge(ids.collect {
-      executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria,true)
+      executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria, true)
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
 
     if (!expand) {
@@ -535,7 +535,7 @@ class TaskController {
   Map evaluateExpressionForExecutionAtStage(@PathVariable("id") String id,
                                             @PathVariable("stageId") String stageId,
                                             @RequestParam("expression") String expression) {
-    def execution = executionRepository.retrieve(PIPELINE, id,true)
+    def execution = executionRepository.retrieve(PIPELINE, id, true)
     def stage = execution.stages.find { it.id == stageId }
 
     if (stage == null) {

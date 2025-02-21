@@ -25,7 +25,9 @@ import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
 import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository
 import com.nhaarman.mockito_kotlin.mock
 import dev.minutest.junit.JUnit5Minutests
@@ -48,7 +50,11 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 class TaskControllerTest : JUnit5Minutests {
-  data class Fixture(val optimizeExecution: Boolean) {
+  data class Fixture(val optimizeExecution: Boolean, val enablePipelineRef: Boolean) {
+
+    init {
+      TriggerDeserializer.customTriggerSuppliers.add(PipelineRefTriggerDeserializerSupplier(enablePipelineRef))
+    }
 
     private val clock: Clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     val database: SqlTestUtil.TestDatabase = SqlTestUtil.initTcMysqlDatabase()!!
@@ -59,7 +65,7 @@ class TaskControllerTest : JUnit5Minutests {
       mapper = OrcaObjectMapper.getInstance(),
       retryProperties = RetryProperties(),
       compressionProperties = ExecutionCompressionProperties(),
-      pipelineRefEnabled = false,
+      pipelineRefEnabled = enablePipelineRef,
       dataSource = mock()
     )
 
@@ -167,6 +173,53 @@ class TaskControllerTest : JUnit5Minutests {
         .thenReturn(listOf())
     }
 
+    fun setupPipelineRef() {
+      database.context
+        .insertInto(table("pipelines"),
+          listOf(
+            field("config_id"),
+            field("id"),
+            field("application"),
+            field("build_time"),
+            field("start_time"),
+            field("body"),
+            field("status")
+          ))
+        .values(
+          listOf(
+            "1",
+            "01JGVRQSZ1H2ZKHS0AJH2PGBGH", //this is the parent execution with default trigger
+            "test-app",
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(120, ChronoUnit.MINUTES).toEpochMilli(),
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(120, ChronoUnit.HOURS).toEpochMilli(),
+            "{\"id\": \"01JGVRQSZ1H2ZKHS0AJH2PGBGH\", \"type\": \"PIPELINE\", \"pipelineConfigId\": \"1\"}",
+            "SUCCEEDED"
+          )
+        )
+        .values(
+          listOf(
+            "1",
+            "01JGVQCD9Q8W5B0N3TTN0JPDVR", //this is the child execution with pipeline trigger
+            "test-app",
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(115, ChronoUnit.MINUTES).toEpochMilli(),
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(115, ChronoUnit.MINUTES).toEpochMilli(),
+            "{\"id\": \"01JGVQCD9Q8W5B0N3TTN0JPDVR\", \"type\": \"PIPELINE\", \"pipelineConfigId\": \"1\", \"trigger\": {\"type\": \"pipeline\", \"user\": \"[anonymous]\", \"parentExecution\": {\"id\": \"01JGVRQSZ1H2ZKHS0AJH2PGBGH\", \"type\": \"PIPELINE\", \"pipelineConfigId\": \"1\"}}}",
+            "SUCCEEDED"
+          )
+        )
+        .values(
+          listOf(
+            "1",
+            "01JGVQBDS5YTVPEJVBST3SAAE6", //this is the child execution with pipelineRef trigger
+            "test-app",
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(115, ChronoUnit.MINUTES).toEpochMilli(),
+            clock.instant().minus(daysOfExecutionHistory, ChronoUnit.DAYS).minus(115, ChronoUnit.MINUTES).toEpochMilli(),
+            "{\"id\": \"01JGVQBDS5YTVPEJVBST3SAAE6\", \"type\": \"PIPELINE\", \"pipelineConfigId\": \"1\", \"trigger\": {\"type\": \"pipelineRef\", \"user\": \"[anonymous]\", \"parentExecutionId\": \"01JGVRQSZ1H2ZKHS0AJH2PGBGH\"}}",
+            "SUCCEEDED"
+          )
+        ).execute()
+    }
+
     fun cleanUp() {
       SqlTestUtil.cleanupDb(database.context)
     }
@@ -175,7 +228,7 @@ class TaskControllerTest : JUnit5Minutests {
   fun tests() = rootContext<Fixture> {
     context("execution retrieval without optimization") {
       fixture {
-        Fixture(false)
+        Fixture(optimizeExecution = false, enablePipelineRef = false)
       }
 
       before { setup() }
@@ -208,7 +261,7 @@ class TaskControllerTest : JUnit5Minutests {
 
     context("execution retrieval with optimization") {
       fixture {
-        Fixture(true)
+        Fixture(optimizeExecution = true, enablePipelineRef = false)
       }
 
       before { setup() }
@@ -241,7 +294,7 @@ class TaskControllerTest : JUnit5Minutests {
 
     context("test query having explicit query timeouts") {
       fixture {
-        Fixture(true)
+        Fixture(optimizeExecution = true, enablePipelineRef = false)
       }
 
       before { setup() }
@@ -255,5 +308,64 @@ class TaskControllerTest : JUnit5Minutests {
           .isA<DataAccessException>()
       }
     }
+
+    context("execution retrieval with pipelineRef disabled") {
+      fixture {
+        Fixture(optimizeExecution = false, enablePipelineRef = false)
+      }
+
+      before { setupPipelineRef() }
+      after { cleanUp() }
+
+      test("SPeL expression can be evaluated against execution without pipelineRef") {
+        val response = subject.perform(
+          get("/pipelines/01JGVQCD9Q8W5B0N3TTN0JPDVR/evaluateExpression") //run Spel from child execution
+            .param("expression", "\${execution.trigger.parentExecution.id}")
+        ).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<EvaluationResult>() {})
+        expectThat(results.result).isEqualTo("01JGVRQSZ1H2ZKHS0AJH2PGBGH") //expects the result is the parent execution id
+      }
+
+      test("SPeL expression can be evaluated against execution with pipelineRef") {
+        val response = subject.perform(
+          get("/pipelines/01JGVQBDS5YTVPEJVBST3SAAE6/evaluateExpression")
+            .param("expression", "\${execution.trigger.parentExecution.id}")
+        ).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<EvaluationResult>() {})
+        expectThat(results.result).isEqualTo("01JGVRQSZ1H2ZKHS0AJH2PGBGH")
+      }
+    }
+
+    context("execution retrieval with pipelineRef enabled") {
+      fixture {
+        Fixture(optimizeExecution = false, enablePipelineRef = true)
+      }
+
+      before { setupPipelineRef() }
+      after { cleanUp() }
+
+      test("SPeL expression can be evaluated against execution without pipelineRef") {
+        val response = subject.perform(
+          get("/pipelines/01JGVQCD9Q8W5B0N3TTN0JPDVR/evaluateExpression")
+            .param("expression", "\${execution.trigger.parentExecution.id}")
+        ).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<EvaluationResult>() {})
+        expectThat(results.result).isEqualTo("01JGVRQSZ1H2ZKHS0AJH2PGBGH")
+      }
+
+      test("SPeL expression can be evaluated against execution with pipelineRef") {
+        val response = subject.perform(
+          get("/pipelines/01JGVQBDS5YTVPEJVBST3SAAE6/evaluateExpression")
+            .param("expression", "\${execution.trigger.parentExecution.id}")
+        ).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<EvaluationResult>() {})
+        expectThat(results.result).isEqualTo("01JGVRQSZ1H2ZKHS0AJH2PGBGH")
+      }
+    }
   }
+
+  data class EvaluationResult(
+    val result: String?,
+    val details: String?
+  )
 }
