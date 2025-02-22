@@ -24,6 +24,8 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver.ResolveResult;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class ArtifactResolverTest {
@@ -54,6 +56,20 @@ final class ArtifactResolverTest {
     assertThat(result.getResolvedArtifacts()).containsExactly(DOCKER_ARTIFACT);
     assertThat(result.getResolvedExpectedArtifacts())
         .containsExactly(bindArtifact(expected, DOCKER_ARTIFACT));
+  }
+
+  @Test
+  void testMatchForNullArtifact() {
+    ArtifactResolver resolver =
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, GCE_IMAGE_ARTIFACT),
+            /* requireUniqueMatches= */ true);
+
+    List<ExpectedArtifact> list = new ArrayList<>();
+    list.add(null);
+
+    assertThatThrownBy(() -> resolver.resolveExpectedArtifacts(list))
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
