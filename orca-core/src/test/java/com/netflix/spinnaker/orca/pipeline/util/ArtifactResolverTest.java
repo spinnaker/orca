@@ -69,7 +69,7 @@ final class ArtifactResolverTest {
     list.add(null);
 
     assertThatThrownBy(() -> resolver.resolveExpectedArtifacts(list))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(InvalidRequestException.class);
   }
 
   @Test
