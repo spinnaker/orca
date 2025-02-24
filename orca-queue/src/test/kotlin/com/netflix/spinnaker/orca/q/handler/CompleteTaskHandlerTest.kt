@@ -53,6 +53,7 @@ import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.never
 import com.nhaarman.mockito_kotlin.reset
@@ -101,7 +102,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
         )
 
         beforeGroup {
-          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -165,7 +166,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
         )
 
         beforeGroup {
-          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -225,7 +226,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
               tasks[2].status = SUCCEEDED
             }
 
-            whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+            whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -277,7 +278,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       )
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -366,7 +367,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       )
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -406,7 +407,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       )
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(message.executionId), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

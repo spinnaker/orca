@@ -408,6 +408,10 @@ class SqlExecutionRepository(
     selectExecution(jooq, type, id)
       ?: throw ExecutionNotFoundException("No $type found for $id")
 
+  override fun retrieve(type: ExecutionType, id: String, includeNestedExecutions: Boolean) =
+    selectExecution(jooq, type, id, includeNestedExecutions = includeNestedExecutions)
+      ?: throw ExecutionNotFoundException("No $type found for $id")
+
   override fun retrieve(type: ExecutionType): Observable<PipelineExecution> =
     Observable.from(
       fetchExecutions { pageSize, cursor ->
@@ -419,8 +423,8 @@ class SqlExecutionRepository(
     return retrieve(type, criteria, null)
   }
 
-  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<PipelineExecution> {
-    withPool(readPoolName) {
+  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?, includeNestedExecutions: Boolean = false): Observable<PipelineExecution> {
+    withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
         fields = selectExecutionFields(compressionProperties) + field("status"),
@@ -444,7 +448,7 @@ class SqlExecutionRepository(
         }
       )
 
-      return Observable.from(select.fetchExecutions())
+      return Observable.from(select.fetchExecutions(includeNestedExecutions))
     }
   }
 
@@ -605,13 +609,21 @@ class SqlExecutionRepository(
         .fetch()
 
       log.debug("getting stage information for all the executions found so far")
-      return ExecutionMapper(mapper, stageReadSize,compressionProperties, pipelineRefEnabled).map(baseQuery.intoResultSet(), jooq)
+      return ExecutionMapper(mapper, stageReadSize,compressionProperties, pipelineRefEnabled).map(baseQuery.intoResultSet(), jooq, false)
     }
   }
 
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
+  ): Observable<PipelineExecution> {
+  return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria, false)
+  }
+
+  override fun retrievePipelinesForPipelineConfigId(
+    pipelineConfigId: String,
+    criteria: ExecutionCriteria,
+    includeNestedExecutions: Boolean
   ): Observable<PipelineExecution> {
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
@@ -644,7 +656,7 @@ class SqlExecutionRepository(
         )
       }
 
-      return Observable.from(select.fetchExecutions())
+      return Observable.from(select.fetchExecutions(includeNestedExecutions))
     }
   }
 
@@ -687,7 +699,7 @@ class SqlExecutionRepository(
 
           ordered.offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
         }
-      ).fetchExecutions().toMutableList()
+      ).fetchExecutions(false).toMutableList()
     }
   }
 
@@ -710,7 +722,7 @@ class SqlExecutionRepository(
             ) as Any
           )
         )
-        .fetchExecution()
+        .fetchExecution(false)
 
       if (execution == null) {
         throw ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
@@ -744,7 +756,7 @@ class SqlExecutionRepository(
             ) as Any
           )
         )
-        .fetchExecution()
+        .fetchExecution(false)
 
       if (execution == null) {
         throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
@@ -770,8 +782,8 @@ class SqlExecutionRepository(
       .setStatuses(BUFFERED)
       .let { criteria ->
         rx.Observable.merge(
-          retrieve(ORCHESTRATION, criteria, partitionName),
-          retrieve(PIPELINE, criteria, partitionName)
+          retrieve(ORCHESTRATION, criteria, partitionName, false),
+          retrieve(PIPELINE, criteria, partitionName, false)
         ).toList().toBlocking().single()
       }
 
@@ -902,7 +914,7 @@ class SqlExecutionRepository(
             else -> field("id").asc()
           }
         )
-      return select.fetchExecutions().toList()
+      return select.fetchExecutions(false).toList()
     }
   }
 
@@ -1302,11 +1314,16 @@ class SqlExecutionRepository(
   private fun selectExecution(
     ctx: DSLContext,
     type: ExecutionType,
-    id: String
+    id: String,
+    forUpdate: Boolean = false,
+    includeNestedExecutions: Boolean = false
   ): PipelineExecution? {
     withPool(poolName) {
       val select = ctx.selectExecution(type, compressionProperties).where(id.toWhereCondition())
-      return select.fetchExecution()
+      if (forUpdate) {
+        select.forUpdate()
+      }
+      return select.fetchExecution(includeNestedExecutions)
     }
   }
 
@@ -1314,6 +1331,7 @@ class SqlExecutionRepository(
     type: ExecutionType,
     limit: Int,
     cursor: String?,
+    includeNestedExecutions: Boolean = false,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
   ): Collection<PipelineExecution> {
     withPool(readPoolName) {
@@ -1340,7 +1358,7 @@ class SqlExecutionRepository(
         }
       )
 
-      return select.fetchExecutions()
+      return select.fetchExecutions(includeNestedExecutions)
     }
   }
 
@@ -1393,11 +1411,11 @@ class SqlExecutionRepository(
       .let { seek(it) }
   }
 
-  private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq)
+  private fun SelectForUpdateStep<out Record>.fetchExecutions(fetchNestedExecution: Boolean) =
+    ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq, fetchNestedExecution)
 
-  private fun SelectForUpdateStep<out Record>.fetchExecution() =
-    fetchExecutions().firstOrNull()
+  private fun SelectForUpdateStep<out Record>.fetchExecution(includeNestedExecutions: Boolean) =
+    fetchExecutions(includeNestedExecutions).firstOrNull()
 
   private fun fetchExecutions(nextPage: (Int, String?) -> Iterable<PipelineExecution>) =
     object : Iterable<PipelineExecution> {
