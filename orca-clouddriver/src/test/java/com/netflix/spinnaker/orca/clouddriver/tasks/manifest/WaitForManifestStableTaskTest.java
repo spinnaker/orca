@@ -21,6 +21,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import okhttp3.Request;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
@@ -148,7 +150,6 @@ final class WaitForManifestStableTaskTest {
 
     reset(oortService);
 
-    verify(oortService, times(0)).getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false);
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_2, false))
         .thenReturn(manifestBuilder().stable(true).failed(false).build());
 
@@ -160,6 +161,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(result.getContext())
                     .build()));
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    verify(oortService, times(0)).getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false);
   }
 
   @Test
@@ -271,6 +273,44 @@ final class WaitForManifestStableTaskTest {
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result))
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
+  }
+
+  @Test
+  void waitTaskContextIsRestartedWhenClouddriverReturnsException() {
+    OortService oortService = mock(OortService.class);
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
+
+    StageExecutionImpl myStage =
+        createStageWithManifests(
+            ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1, MANIFEST_2)));
+
+    when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
+        .thenReturn(manifestBuilder().stable(true).failed(false).build());
+    when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_2, false))
+        .thenReturn(manifestBuilder().stable(false).failed(false).build());
+
+    TaskResult result = task.execute(myStage);
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_2));
+    assertThat(getErrors(result)).isEmpty();
+
+    reset(oortService);
+
+    when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_2, false))
+        .thenThrow(
+            new SpinnakerServerException(new Request.Builder().url("http://localhost").build()));
+
+    result =
+        task.execute(
+            createStageWithContext(
+                ImmutableMap.<String, Object>builder()
+                    .putAll(myStage.getContext())
+                    .putAll(result.getContext())
+                    .build()));
+
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat(getMessages(result)).isEmpty();
+    assertThat(getErrors(result)).isEmpty();
   }
 
   private static String waitingToStabilizeMessage(String manifest) {
