@@ -17,7 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -34,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import okhttp3.Request;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
 final class WaitForManifestStableTaskTest {
@@ -58,7 +61,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(true).failed(true).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result)).containsExactly(failedMessage(MANIFEST_1));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
   }
@@ -75,7 +78,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(true).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result)).containsExactly(failedMessage(MANIFEST_1));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
   }
@@ -92,7 +95,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_1));
     assertThat(getErrors(result)).isEmpty();
   }
@@ -109,7 +112,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(true).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     assertThat(getMessages(result)).isEmpty();
     assertThat(getErrors(result)).isEmpty();
   }
@@ -126,7 +129,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_1));
     assertThat(getErrors(result)).isEmpty();
   }
@@ -146,7 +149,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
 
     reset(oortService);
 
@@ -160,7 +163,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(myStage.getContext())
                     .putAll(result.getContext())
                     .build()));
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     verify(oortService, times(0)).getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false);
   }
 
@@ -179,7 +182,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).isEmpty();
 
@@ -195,7 +198,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(myStage.getContext())
                     .putAll(result.getContext())
                     .build()));
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).isEmpty();
   }
@@ -215,7 +218,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result))
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
@@ -233,7 +236,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(result.getContext())
                     .build()));
 
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result))
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
@@ -254,7 +257,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result))
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
 
@@ -270,7 +273,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(myStage.getContext())
                     .putAll(result.getContext())
                     .build()));
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result))
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
   }
@@ -290,7 +293,7 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result)).containsExactly(waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).isEmpty();
 
@@ -308,7 +311,7 @@ final class WaitForManifestStableTaskTest {
                     .putAll(result.getContext())
                     .build()));
 
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
+    assertThat((CharSequence) result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result)).isEmpty();
     assertThat(getErrors(result)).isEmpty();
   }
