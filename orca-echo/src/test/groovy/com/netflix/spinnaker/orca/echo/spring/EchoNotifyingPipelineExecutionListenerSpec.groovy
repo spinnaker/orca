@@ -177,6 +177,56 @@ class EchoNotifyingPipelineExecutionListenerSpec extends Specification {
     0 * _
   }
 
+  void "evaluate SpEL that references pipeline.metadata using beforeExecution"(){
+    given:
+    def pipelineMetadata = ['mychainId': '53dd5f3e-fb0d-4c48-92ee-fda7f0eca5e5']
+    def pipeline = PipelineExecutionImpl.newPipeline("myapp")
+    pipeline.setMetadata(pipelineMetadata)
+    def pipelineConfiguredNotification = [
+        when   : ["pipeline.started", "pipeline.completed"],
+        type   : "slack",
+        address: 'spinnaker',
+        customData: [chainId: "\${execution.metadata.mychainId}"]
+    ]
+    pipeline.notifications.add(pipelineConfiguredNotification)
+
+    when:
+    echoListener.beforeExecution(null, pipeline)
+
+    then:
+    pipeline.notifications.size() == 1
+    pipeline.notifications[0].when.containsAll(["pipeline.started", "pipeline.completed"])
+    pipeline.notifications[0].customData.chainId == pipelineMetadata.mychainId
+    1 * front50Service.getApplicationNotifications("myapp") >> new ApplicationNotifications()
+    1 * echoService.recordEvent(_)
+    0 * _
+  }
+
+  void "evaluate SpEL that references pipeline.metadata using afterExecution"(){
+    given:
+    def pipelineMetadata = ['mychainId': '53dd5f3e-fb0d-4c48-92ee-fda7f0eca5e5']
+    def pipeline = PipelineExecutionImpl.newPipeline("myapp")
+    pipeline.setMetadata(pipelineMetadata)
+    def pipelineConfiguredNotification = [
+        when   : ["pipeline.started", "pipeline.completed"],
+        type   : "slack",
+        address: 'spinnaker',
+        customData: [chainId: "\${execution.metadata.mychainId}"]
+    ]
+    pipeline.notifications.add(pipelineConfiguredNotification)
+
+    when:
+    echoListener.afterExecution(null, pipeline, ExecutionStatus.SUCCEEDED, true)
+
+    then:
+    pipeline.notifications.size() == 1
+    pipeline.notifications[0].when.containsAll(["pipeline.started", "pipeline.completed"])
+    pipeline.notifications[0].customData.chainId == pipelineMetadata.mychainId
+    1 * front50Service.getApplicationNotifications("myapp") >> new ApplicationNotifications()
+    1 * echoService.recordEvent(_)
+    0 * _
+  }
+
   void "handles case where no notifications are present"() {
     given:
     def pipeline = PipelineExecutionImpl.newPipeline("myapp")
