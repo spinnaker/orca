@@ -112,6 +112,12 @@ class Front50Configuration {
   private OkHttpClient configureTimeouts(OkHttpClient baseClient, Front50ConfigurationProperties props) {
     OkHttpClient.Builder builder = baseClient.newBuilder()
     
+    // Check if any explicit Front50 timeouts are configured
+    boolean hasCustomTimeouts = props.okhttp?.hasCustomTimeouts()
+    if (hasCustomTimeouts) {
+      log.info("Using custom Front50 timeout configuration")
+    }
+    
     // Apply the timeouts following the fallback chain
     long readTimeout = getEffectiveTimeout(
         props.okhttp?.readTimeoutMs, 
