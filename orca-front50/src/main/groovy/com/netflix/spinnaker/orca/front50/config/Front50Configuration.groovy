@@ -64,9 +64,9 @@ class Front50Configuration {
   private static final Logger log = LoggerFactory.getLogger(Front50Configuration.class)
   
   // Default timeout values if no other configuration is provided
-  private static final long DEFAULT_READ_TIMEOUT_MS = 60000    // 60 seconds
-  private static final long DEFAULT_WRITE_TIMEOUT_MS = 60000   // 60 seconds
-  private static final long DEFAULT_CONNECT_TIMEOUT_MS = 10000 // 10 seconds
+  private static final Long DEFAULT_READ_TIMEOUT_MS = 60000L    // 60 seconds
+  private static final Long DEFAULT_WRITE_TIMEOUT_MS = 60000L   // 60 seconds
+  private static final Long DEFAULT_CONNECT_TIMEOUT_MS = 10000L // 10 seconds
 
   @Autowired
   OkHttpClientProvider clientProvider
@@ -112,12 +112,6 @@ class Front50Configuration {
   private OkHttpClient configureTimeouts(OkHttpClient baseClient, Front50ConfigurationProperties props) {
     OkHttpClient.Builder builder = baseClient.newBuilder()
     
-    // Check if any explicit Front50 timeouts are configured
-    boolean hasCustomTimeouts = props.okhttp?.hasCustomTimeouts()
-    if (hasCustomTimeouts) {
-      log.info("Using custom Front50 timeout configuration")
-    }
-    
     // Apply the timeouts following the fallback chain
     long readTimeout = getEffectiveTimeout(
         props.okhttp?.readTimeoutMs, 
@@ -147,15 +141,27 @@ class Front50Configuration {
   
   /**
    * Returns the effective timeout by following the fallback chain:
-   * 1. Explicit config from Front50ConfigProperties
+   * 1. Explicit config from Front50ConfigProperties (if different from default)
    * 2. Global client config 
    * 3. Default value
    */
   private long getEffectiveTimeout(Integer explicitTimeout, long globalTimeout, long defaultTimeout, String timeoutType) {
-    if (explicitTimeout != null && explicitTimeout > 0) {
-      log.debug("Using explicit Front50 {} timeout: {}ms", timeoutType, explicitTimeout)
-      return explicitTimeout
-    } else if (globalTimeout > 0) {
+    // First check if the explicit timeout is non-null and has been explicitly configured
+    // to something other than the default
+    if (explicitTimeout != null) {
+      // Check if the value differs from default configuration values
+      boolean isDefaultReadValue = explicitTimeout == 60000 && timeoutType == "read"
+      boolean isDefaultWriteValue = explicitTimeout == 60000 && timeoutType == "write"
+      boolean isDefaultConnectValue = explicitTimeout == 10000 && timeoutType == "connect"
+      
+      // Only log and use explicit timeout if it's not simply the default value
+      if (!isDefaultReadValue && !isDefaultWriteValue && !isDefaultConnectValue) {
+        log.debug("Using explicit Front50 {} timeout: {}ms", timeoutType, explicitTimeout)
+        return explicitTimeout.longValue()
+      }
+    }
+    
+    if (globalTimeout > 0) {
       log.debug("Using global {} timeout: {}ms", timeoutType, globalTimeout)
       return globalTimeout 
     } else {

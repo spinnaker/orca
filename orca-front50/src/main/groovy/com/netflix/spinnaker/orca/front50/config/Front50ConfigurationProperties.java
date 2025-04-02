@@ -69,22 +69,39 @@ public class Front50ConfigurationProperties {
   @Data
   public static class OkHttpConfigurationProperties {
     /** Read timeout in milliseconds. Default is 60 seconds (60000ms) */
-    int readTimeoutMs = 60000;
+    private Integer readTimeoutMs = 60000;
 
     /** Write timeout in milliseconds. Default is 60 seconds (60000ms) */
-    int writeTimeoutMs = 60000;
+    private Integer writeTimeoutMs = 60000;
 
     /** Connection timeout in milliseconds. Default is 10 seconds (10000ms) */
-    int connectTimeoutMs = 10000;
+    private Integer connectTimeoutMs = 10000;
 
     /**
-     * Checks if this instance has any custom timeout configuration.
+     * Checks if read timeout is explicitly configured with a non-default value.
      *
-     * @return true if any timeout is non-default, false otherwise
+     * @return true if read timeout is configured with a non-default value
      */
-    public boolean hasCustomTimeouts() {
-      // Compare with default values to determine if explicit config was provided
-      return readTimeoutMs != 60000 || writeTimeoutMs != 60000 || connectTimeoutMs != 10000;
+    public boolean hasReadTimeoutConfig() {
+      return readTimeoutMs != null && readTimeoutMs != 60000;
+    }
+
+    /**
+     * Checks if write timeout is explicitly configured with a non-default value.
+     *
+     * @return true if write timeout is configured with a non-default value
+     */
+    public boolean hasWriteTimeoutConfig() {
+      return writeTimeoutMs != null && writeTimeoutMs != 60000;
+    }
+
+    /**
+     * Checks if connect timeout is explicitly configured with a non-default value.
+     *
+     * @return true if connect timeout is configured with a non-default value
+     */
+    public boolean hasConnectTimeoutConfig() {
+      return connectTimeoutMs != null && connectTimeoutMs != 10000;
     }
   }
 }
