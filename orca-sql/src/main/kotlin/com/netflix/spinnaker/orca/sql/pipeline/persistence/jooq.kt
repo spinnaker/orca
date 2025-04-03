@@ -142,7 +142,7 @@ internal fun SelectForUpdateStep<out Record>.fetchExecutions(
   jooq: DSLContext,
   pipelineRefEnabled: Boolean
 ) =
-  ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq)
+  ExecutionMapper(mapper, stageReadSize, compressionProperties, pipelineRefEnabled).map(fetch().intoResultSet(), jooq, pipelineRefEnabled)
 
 
 private fun selectStageFields(compressionProperties: ExecutionCompressionProperties): List<Field<Any>> {

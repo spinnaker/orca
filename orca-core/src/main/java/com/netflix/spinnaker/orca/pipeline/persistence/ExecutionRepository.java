@@ -72,6 +72,14 @@ public interface ExecutionRepository {
   PipelineExecution retrieve(@Nonnull ExecutionType type, @Nonnull String id)
       throws ExecutionNotFoundException;
 
+  @Nonnull
+  default PipelineExecution retrieve(
+      @Nonnull ExecutionType type, @Nonnull String id, boolean includeNestedExecutions)
+      throws ExecutionNotFoundException {
+    // Default behavior: ignore `includeNestedExecutions`
+    return retrieve(type, id);
+  }
+
   void delete(@Nonnull ExecutionType type, @Nonnull String id);
 
   void delete(@Nonnull ExecutionType type, @Nonnull List<String> idsToDelete);
@@ -91,6 +99,15 @@ public interface ExecutionRepository {
   @Nonnull
   Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
+
+  @Nonnull
+  default Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
+      @Nonnull String pipelineConfigId,
+      @Nonnull ExecutionCriteria criteria,
+      Boolean includeNestedExecutions) {
+    // Default behavior: ignore `includeNestedExecutions`
+    return retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria);
+  }
 
   @Nonnull
   Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);

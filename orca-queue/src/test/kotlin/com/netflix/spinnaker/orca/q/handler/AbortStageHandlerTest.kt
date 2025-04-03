@@ -34,6 +34,7 @@ import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.never
 import com.nhaarman.mockito_kotlin.reset
@@ -78,7 +79,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -107,7 +108,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -161,7 +162,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1<1"))
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
