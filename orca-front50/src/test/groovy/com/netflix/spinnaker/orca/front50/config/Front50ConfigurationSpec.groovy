@@ -47,9 +47,9 @@ class Front50ConfigurationSpec extends Specification {
   private Method getEffectiveTimeoutMethod
   
   // Default timeout values from Front50Configuration
-  private static final long DEFAULT_READ_TIMEOUT_MS = 60000    // 60 seconds
-  private static final long DEFAULT_WRITE_TIMEOUT_MS = 60000   // 60 seconds
-  private static final long DEFAULT_CONNECT_TIMEOUT_MS = 10000 // 10 seconds
+  private static final long DEFAULT_READ_TIMEOUT_MS = 60000L    // 60 seconds
+  private static final long DEFAULT_WRITE_TIMEOUT_MS = 60000L   // 60 seconds
+  private static final long DEFAULT_CONNECT_TIMEOUT_MS = 10000L // 10 seconds
   
   def setup() {
     front50Configuration = new Front50Configuration()
@@ -59,7 +59,7 @@ class Front50ConfigurationSpec extends Specification {
     // Use reflection to access the private getEffectiveTimeout method
     getEffectiveTimeoutMethod = Front50Configuration.class.getDeclaredMethod(
         "getEffectiveTimeout", 
-        Integer.class, 
+        Long.class, 
         long.class, 
         long.class, 
         String.class)
@@ -82,12 +82,12 @@ class Front50ConfigurationSpec extends Specification {
     
     where:
     description               | explicitTimeout | globalTimeout | defaultTimeout | timeoutType || expectedTimeout
-    "custom explicit timeout" | 30000           | 20000         | 60000          | "read"      || 30000
-    "global timeout - read"   | 60000           | 20000         | 60000          | "read"      || 20000  // Default read timeout is ignored
-    "global timeout - write"  | 60000           | 20000         | 60000          | "write"     || 20000  // Default write timeout is ignored
-    "global timeout - connect"| 10000           | 20000         | 60000          | "connect"   || 20000  // Default connect timeout is ignored
-    "default timeout"         | null            | 0             | 60000          | "read"      || 60000
-    "zero explicit timeout"   | 0               | 20000         | 60000          | "read"      || 0       // Zero is treated as explicitly configured
+    "custom explicit timeout" | 30000L          | 20000L        | 60000L         | "read"      || 30000L
+    "global timeout - read"   | 60000L          | 20000L        | 60000L         | "read"      || 20000L  // Default read timeout is ignored
+    "global timeout - write"  | 60000L          | 20000L        | 60000L         | "write"     || 20000L  // Default write timeout is ignored
+    "global timeout - connect"| 10000L          | 20000L        | 60000L         | "connect"   || 20000L  // Default connect timeout is ignored
+    "default timeout"         | null            | 0L            | 60000L         | "read"      || 60000L
+    "zero explicit timeout"   | 0L              | 20000L        | 60000L         | "read"      || 0L       // Zero is treated as explicitly configured
   }
   
   @Unroll
@@ -134,10 +134,10 @@ class Front50ConfigurationSpec extends Specification {
     
     where:
     explicitTimeoutsSet | readTimeoutMs | writeTimeoutMs | connectTimeoutMs | globalReadTimeoutMs | globalWriteTimeoutMs | globalConnectTimeoutMs || expectedReadTimeoutMs | expectedWriteTimeoutMs | expectedConnectTimeoutMs
-    true                | 30000         | 35000          | 5000             | 20000               | 25000                | 15000                  || 30000                 | 35000                 | 5000
-    true                | null          | 35000          | null             | 20000               | 25000                | 15000                  || 20000                 | 35000                 | 15000
-    true                | null          | null           | null             | 20000               | 25000                | 15000                  || 20000                 | 25000                 | 15000
-    false               | null          | null           | null             | 20000               | 25000                | 15000                  || 20000                 | 25000                 | 15000
-    false               | null          | null           | null             | 0                   | 0                    | 0                      || DEFAULT_READ_TIMEOUT_MS | DEFAULT_WRITE_TIMEOUT_MS | DEFAULT_CONNECT_TIMEOUT_MS
+    true                | 30000L        | 35000L         | 5000L            | 20000L              | 25000L               | 15000L                 || 30000L                | 35000L                | 5000L
+    true                | null          | 35000L         | null             | 20000L              | 25000L               | 15000L                 || 20000L                | 35000L                | 15000L
+    true                | null          | null           | null             | 20000L              | 25000L               | 15000L                 || 20000L                | 25000L                | 15000L
+    false               | null          | null           | null             | 20000L              | 25000L               | 15000L                 || 20000L                | 25000L                | 15000L
+    false               | null          | null           | null             | 0L                  | 0L                   | 0L                     || DEFAULT_READ_TIMEOUT_MS | DEFAULT_WRITE_TIMEOUT_MS | DEFAULT_CONNECT_TIMEOUT_MS
   }
 }
