@@ -38,9 +38,9 @@ public class Front50ConfigurationProperties {
 
   @Data
   public static class OkHttpConfigurationProperties {
-    int readTimeoutMs = 10000;
+    int readTimeoutMs = 60000;
 
-    int writeTimeoutMs = 10000;
+    int writeTimeoutMs = 60000;
 
     int connectTimeoutMs = 10000;
   }
