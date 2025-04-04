@@ -120,6 +120,9 @@ public final class ArtifactResolver {
     ImmutableList.Builder<ExpectedArtifact> boundExpectedArtifacts = ImmutableList.builder();
 
     for (ExpectedArtifact expectedArtifact : expectedArtifacts) {
+      if (expectedArtifact == null) {
+        throw new InvalidRequestException("expected artifact cannot be null.");
+      }
       Artifact resolved =
           resolveSingleArtifact(expectedArtifact)
               .orElseThrow(
