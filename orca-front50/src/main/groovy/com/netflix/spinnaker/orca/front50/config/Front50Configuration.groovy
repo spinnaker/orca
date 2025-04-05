@@ -30,6 +30,8 @@ import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import groovy.transform.CompileStatic
 import okhttp3.OkHttpClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -59,6 +61,13 @@ import static retrofit.Endpoints.newFixedEndpoint
 @ConditionalOnExpression('${front50.enabled:true}')
 class Front50Configuration {
 
+  private static final Logger log = LoggerFactory.getLogger(Front50Configuration.class)
+  
+  // Default timeout values if no other configuration is provided
+  private static final long DEFAULT_READ_TIMEOUT_MS = 60000L    // 60 seconds
+  private static final long DEFAULT_WRITE_TIMEOUT_MS = 60000L   // 60 seconds
+  private static final long DEFAULT_CONNECT_TIMEOUT_MS = 10000L // 10 seconds
+
   @Autowired
   OkHttpClientProvider clientProvider
 
@@ -75,22 +84,90 @@ class Front50Configuration {
 
   @Bean
   Front50Service front50Service(Endpoint front50Endpoint, ObjectMapper mapper, Front50ConfigurationProperties front50ConfigurationProperties) {
-    OkHttpClient okHttpClient = clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl()));
-    okHttpClient = okHttpClient.newBuilder()
-        .readTimeout(front50ConfigurationProperties.okhttp.readTimeoutMs, TimeUnit.MILLISECONDS)
-        .writeTimeout(front50ConfigurationProperties.okhttp.writeTimeoutMs, TimeUnit.MILLISECONDS)
-        .connectTimeout(front50ConfigurationProperties.okhttp.connectTimeoutMs, TimeUnit.MILLISECONDS)
-        .build();
+    // Get base client with global configuration
+    OkHttpClient baseClient = clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl()))
+    
+    // Configure client with appropriate timeouts
+    OkHttpClient configuredClient = configureTimeouts(baseClient, front50ConfigurationProperties)
+    
+    // Create and return the service
     new RestAdapter.Builder()
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(front50Endpoint)
-      .setClient(new Ok3Client(okHttpClient))
+      .setClient(new Ok3Client(configuredClient))
       .setLogLevel(retrofitLogLevel)
       .setLog(new RetrofitSlf4jLog(Front50Service))
       .setConverter(new JacksonConverter(mapper))
       .setErrorHandler(SpinnakerRetrofitErrorHandler.getInstance())
       .build()
       .create(Front50Service)
+  }
+  
+  /**
+   * Configures an OkHttpClient with appropriate timeout settings using fallback chain:
+   * 1. Use explicit Front50 timeouts if configured
+   * 2. Fall back to global client timeouts
+   * 3. Fall back to default timeout values
+   */
+  private OkHttpClient configureTimeouts(OkHttpClient baseClient, Front50ConfigurationProperties props) {
+    OkHttpClient.Builder builder = baseClient.newBuilder()
+    
+    // Apply the timeouts following the fallback chain
+    long readTimeout = getEffectiveTimeout(
+        props.okhttp?.readTimeoutMs, 
+        baseClient.readTimeoutMillis(), 
+        DEFAULT_READ_TIMEOUT_MS,
+        "read")
+        
+    long writeTimeout = getEffectiveTimeout(
+        props.okhttp?.writeTimeoutMs, 
+        baseClient.writeTimeoutMillis(), 
+        DEFAULT_WRITE_TIMEOUT_MS,
+        "write")
+        
+    long connectTimeout = getEffectiveTimeout(
+        props.okhttp?.connectTimeoutMs, 
+        baseClient.connectTimeoutMillis(), 
+        DEFAULT_CONNECT_TIMEOUT_MS,
+        "connect")
+    
+    // Apply effective timeouts to builder
+    builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS)
+           .writeTimeout(writeTimeout, TimeUnit.MILLISECONDS)
+           .connectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+    
+    return builder.build()
+  }
+  
+  /**
+   * Returns the effective timeout by following the fallback chain:
+   * 1. Explicit config from Front50ConfigProperties
+   * 2. Global client config 
+   * 3. Default value
+   */
+  private long getEffectiveTimeout(Long explicitTimeout, long globalTimeout, long defaultTimeout, String timeoutType) {
+    // First check if the explicit timeout is non-null and has been explicitly configured
+    // to something other than the default
+    if (explicitTimeout != null) {
+      // Check if the value differs from default configuration values
+      boolean isDefaultReadValue = explicitTimeout == DEFAULT_READ_TIMEOUT_MS && timeoutType == "read"
+      boolean isDefaultWriteValue = explicitTimeout == DEFAULT_WRITE_TIMEOUT_MS && timeoutType == "write"
+      boolean isDefaultConnectValue = explicitTimeout == DEFAULT_CONNECT_TIMEOUT_MS && timeoutType == "connect"
+      
+      // Only log and use explicit timeout if it's not simply the default value
+      if (!isDefaultReadValue && !isDefaultWriteValue && !isDefaultConnectValue) {
+        log.debug("Using explicit Front50 {} timeout: {}ms", timeoutType, explicitTimeout)
+        return explicitTimeout
+      }
+    }
+    
+    if (globalTimeout > 0) {
+      log.debug("Using global {} timeout: {}ms", timeoutType, globalTimeout)
+      return globalTimeout 
+    } else {
+      log.debug("Using default {} timeout: {}ms", timeoutType, defaultTimeout)
+      return defaultTimeout
+    }
   }
 
   @Bean
