@@ -28,8 +28,10 @@ import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.RescheduleExecution
 import com.netflix.spinnaker.orca.q.ResumeStage
 import com.netflix.spinnaker.q.Queue
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -69,7 +71,7 @@ object CancelExecutionHandlerTest : SubjectSpek<CancelExecutionHandler>({
       val message = CancelExecution(pipeline, "fzlem@netflix.com", "because")
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -113,7 +115,7 @@ object CancelExecutionHandlerTest : SubjectSpek<CancelExecutionHandler>({
       val message = CancelExecution(pipeline, "fzlem@netflix.com", "because")
 
       beforeGroup {
-        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(eq(PIPELINE), eq(pipeline.id), any())) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
