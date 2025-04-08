@@ -231,6 +231,7 @@ public class ExecutionLauncher {
         .withSpelEvaluator(getString(config, "spelEvaluator"))
         .withTemplateVariables(getMap(config, "templateVariables"))
         .withIncludeAllowedAccounts(executionConfigurationProperties.isIncludeAllowedAccounts())
+        .withMetadata(getMap(config, "metadata"))
         .build();
   }
 

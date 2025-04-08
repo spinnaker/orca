@@ -81,4 +81,16 @@ class PipelineBuilderTest {
     // then
     assertThat(execution.getAuthentication().getAllowedAccounts()).isEqualTo(Set.of());
   }
+
+  @Test
+  void buildInlcludesMetadata() {
+
+    // when
+    PipelineBuilder pipelineBuilder =
+        new PipelineBuilder("my-application").withMetadata(new HashMap<String, Object>());
+    PipelineExecution execution = pipelineBuilder.build();
+
+    // then
+    assertThat(execution.getMetadata()).isNotNull();
+  }
 }

@@ -104,6 +104,11 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
   }
 
   private void processSpelInNotifications(PipelineExecution execution) {
+    //Evaluate spel expressions on pipeline.metadata so that they are resolved before evaluating notifications.
+    //This is needed so that the values are ready for when they are referenced at pipeline notification level.
+    Map<String, Object> evaluatedPipelineMetadata = contextParameterProcessor.process(objectMapper.convertValue(execution.getMetadata(), Map), contextParameterProcessor.buildExecutionContext(execution), true)
+    execution.setMetadata(evaluatedPipelineMetadata)
+
     List<Map<String, Object>> spelProcessedNotifications = execution.notifications.collect({
       contextParameterProcessor.process(it, contextParameterProcessor.buildExecutionContext(execution), true)
     })
