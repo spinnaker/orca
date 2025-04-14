@@ -19,6 +19,30 @@ package com.netflix.spinnaker.orca.front50.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Configuration properties for Front50 service.
+ *
+ * <p>These properties can be configured in your YAML configuration:
+ *
+ * <pre>
+ * front50:
+ *   baseUrl: http://front50.example.com
+ *   enabled: true
+ *   useTriggeredByEndpoint: true
+ *   okhttp:
+ *     connectTimeoutMs: 10000
+ *     readTimeoutMs: 60000
+ *     writeTimeoutMs: 60000
+ * </pre>
+ *
+ * <p>If not explicitly configured, a fallback chain will be used for timeouts:
+ *
+ * <ol>
+ *   <li>Use explicit okhttp configuration if present
+ *   <li>Fall back to global okhttp client configuration
+ *   <li>Use default fallback values (10s connect, 60s read/write)
+ * </ol>
+ */
 @Data
 @ConfigurationProperties("front50")
 public class Front50ConfigurationProperties {
@@ -34,14 +58,33 @@ public class Front50ConfigurationProperties {
    */
   boolean useTriggeredByEndpoint = true;
 
+  /** HTTP client configuration for connecting to Front50 service */
   OkHttpConfigurationProperties okhttp = new OkHttpConfigurationProperties();
 
+  /**
+   * Configuration properties for the OkHttp client connecting to Front50. These will only be used
+   * if explicitly set in the configuration. Otherwise, global client timeouts will be used as
+   * fallback.
+   */
   @Data
   public static class OkHttpConfigurationProperties {
-    int readTimeoutMs = 10000;
+    /** Read timeout in milliseconds. Default is 60 seconds (60000ms) */
+    private Long readTimeoutMs = 60000L;
 
-    int writeTimeoutMs = 10000;
+    /** Write timeout in milliseconds. Default is 60 seconds (60000ms) */
+    private Long writeTimeoutMs = 60000L;
 
-    int connectTimeoutMs = 10000;
+    /** Connection timeout in milliseconds. Default is 10 seconds (10000ms) */
+    private Long connectTimeoutMs = 10000L;
+
+    /**
+     * Checks if this instance has any custom timeout configuration.
+     *
+     * @return true if any timeout is non-default, false otherwise
+     */
+    public boolean hasCustomTimeouts() {
+      // Compare with default values to determine if explicit config was provided
+      return readTimeoutMs != 60000L || writeTimeoutMs != 60000L || connectTimeoutMs != 10000L;
+    }
   }
 }
