@@ -32,6 +32,11 @@ kayenta:
   enabled: ${services.kayenta.enabled:false}
   baseUrl: ${services.kayenta.baseUrl:http://localhost:8090}
 
+services:
+  fiat:
+    enabled: false
+    baseUrl: http://localhost:7003
+
 redis:
   connection: ${services.redis.baseUrl:redis://localhost:6379}
 
