@@ -62,6 +62,12 @@ class EchoNotifyingStageListener implements StageListener {
   @Override
   @CompileDynamic
   void beforeStage(StageExecution stage) {
+    // Manual Judgment fix is already present
+    if (stage.type == "manualJudgment") {
+      log.debug("Manual Judgment fix is already present")
+      return
+    }
+    
     recordEvent("stage", "starting", stage)
   }
 
