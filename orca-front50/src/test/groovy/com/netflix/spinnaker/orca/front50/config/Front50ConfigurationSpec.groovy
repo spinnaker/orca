@@ -17,22 +17,24 @@
 package com.netflix.spinnaker.orca.front50.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.config.DefaultServiceEndpoint
-import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
 import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties
-import com.netflix.spinnaker.orca.front50.Front50Service
-import okhttp3.OkHttpClient
 import retrofit.Endpoint
-import retrofit.RequestInterceptor
-import retrofit.RestAdapter
 import spock.lang.Specification
 import spock.lang.Subject
+import java.util.concurrent.TimeUnit
 
 /**
- * Simple test to verify that the Front50ConfigurationProperties defaults match OkHttpClientConfigurationProperties
+ * Tests for Front50 timeout configuration
  */
 class Front50ConfigurationSpec extends Specification {
 
+  @Subject
+  Front50Configuration front50Configuration = new Front50Configuration()
+
+  /**
+   * Verifies that the default timeout values in Front50ConfigurationProperties match
+   * those in OkHttpClientConfigurationProperties to ensure backward compatibility
+   */
   def "default timeout values should match OkHttpClientConfigurationProperties"() {
     given:
     OkHttpClientConfigurationProperties globalProps = new OkHttpClientConfigurationProperties()
@@ -44,9 +46,12 @@ class Front50ConfigurationSpec extends Specification {
     front50Props.readTimeoutMs == globalProps.readTimeoutMs
   }
   
+  /**
+   * Verifies that the front50Service method accepts OkHttpClientConfigurationProperties
+   * as a parameter, which is necessary for the timeout fallback mechanism to work
+   */
   def "front50Service method should accept OkHttpClientConfigurationProperties parameter"() {
     given:
-    def front50Configuration = new Front50Configuration()
     def method = Front50Configuration.class.getDeclaredMethod(
         "front50Service", 
         Endpoint.class, 
@@ -56,5 +61,53 @@ class Front50ConfigurationSpec extends Specification {
     
     expect:
     method != null
+  }
+  
+  /**
+   * Verifies that hasCustomTimeouts correctly identifies when custom timeouts exist
+   */
+  def "hasCustomTimeouts should return #expected when #description"() {
+    given:
+    def props = new Front50ConfigurationProperties.OkHttpConfigurationProperties()
+    if (connectTimeout != null) {
+      props.connectTimeoutMs = connectTimeout
+    }
+    if (readTimeout != null) {
+      props.readTimeoutMs = readTimeout
+    }
+    
+    expect:
+    props.hasCustomTimeouts() == expected
+    
+    where:
+    description                     | connectTimeout | readTimeout || expected
+    "using default values"          | 5000L          | 120000L     || false
+    "only connect timeout changed"  | 10000L         | 120000L     || true
+    "only read timeout changed"     | 5000L          | 30000L      || true
+    "both timeouts changed"         | 10000L         | 30000L      || true
+  }
+  
+  /**
+   * This test examines the source code of Front50Configuration to verify that
+   * the timeout fallback pattern is correctly implemented. This method was chosen
+   * because OkHttpClient.Builder is a final class and cannot be easily mocked.
+   */
+  def "front50Service uses the correct timeout fallback pattern"() {
+    given:
+    def sourceFile = new File("/Users/shlomodaari/armory/spinnaker-oss-services/orca/orca-front50/src/main/groovy/com/netflix/spinnaker/orca/front50/config/Front50Configuration.groovy")
+    def sourceCode = sourceFile.exists() ? sourceFile.text : null
+    
+    expect:
+    sourceCode != null
+    
+    // First apply global timeouts
+    sourceCode.contains("builder.connectTimeout(okHttpClientConfigurationProperties.getConnectTimeoutMs(), TimeUnit.MILLISECONDS)")
+    sourceCode.contains("builder.readTimeout(okHttpClientConfigurationProperties.getReadTimeoutMs(), TimeUnit.MILLISECONDS)")
+    
+    // Then conditionally override with Front50-specific timeouts if defined
+    sourceCode.contains("if (front50ConfigurationProperties.okhttp?.connectTimeoutMs != null) {")
+    sourceCode.contains("builder.connectTimeout(front50ConfigurationProperties.okhttp.connectTimeoutMs, TimeUnit.MILLISECONDS)")
+    sourceCode.contains("if (front50ConfigurationProperties.okhttp?.readTimeoutMs != null) {")
+    sourceCode.contains("builder.readTimeout(front50ConfigurationProperties.okhttp.readTimeoutMs, TimeUnit.MILLISECONDS)")
   }
 }
