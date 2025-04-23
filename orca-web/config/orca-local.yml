@@ -1,0 +1,34 @@
+server:
+  port: 8083
+
+redis:
+  enabled: false  # Disable Redis dependency for local testing
+
+sql:
+  enabled: true  # Use SQL backend instead
+  connectionPool:
+    jdbcUrl: jdbc:h2:mem:orca;MODE=MYSQL;DB_CLOSE_DELAY=-1
+    driver: org.h2.Driver
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:orca;MODE=MYSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+
+keiko:
+  queue:
+    memory:
+      enabled: true  # Use in-memory queue
+
+services:
+  echo:
+    enabled: false  # Disable echo service dependency for testing
+  front50:
+    enabled: false  # Disable front50 service dependency for testing
+  clouddriver:
+    enabled: false  # Disable clouddriver service dependency for testing
+
+# Debug logging for our fix
+logging:
+  level:
+    com.netflix.spinnaker.orca.echo.spring.EchoNotifyingStageListener: DEBUG

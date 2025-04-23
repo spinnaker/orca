@@ -68,14 +68,14 @@ public class Front50ConfigurationProperties {
    */
   @Data
   public static class OkHttpConfigurationProperties {
-    /** Read timeout in milliseconds. Default is 60 seconds (60000ms) */
-    private Long readTimeoutMs = 60000L;
+    /** Read timeout in milliseconds. Default is 120 seconds (120000ms) */
+    private Long readTimeoutMs = 120000L;
 
     /** Write timeout in milliseconds. Default is 60 seconds (60000ms) */
     private Long writeTimeoutMs = 60000L;
 
-    /** Connection timeout in milliseconds. Default is 10 seconds (10000ms) */
-    private Long connectTimeoutMs = 10000L;
+    /** Connection timeout in milliseconds. Default is 5 seconds (5000ms) */
+    private Long connectTimeoutMs = 5000L;
 
     /**
      * Checks if this instance has any custom timeout configuration.
@@ -84,7 +84,7 @@ public class Front50ConfigurationProperties {
      */
     public boolean hasCustomTimeouts() {
       // Compare with default values to determine if explicit config was provided
-      return readTimeoutMs != 60000L || writeTimeoutMs != 60000L || connectTimeoutMs != 10000L;
+      return readTimeoutMs != 120000L || writeTimeoutMs != 60000L || connectTimeoutMs != 5000L;
     }
   }
 }
